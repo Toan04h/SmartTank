@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment variables - never commit secrets
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
