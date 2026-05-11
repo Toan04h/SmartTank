@@ -32,7 +32,7 @@ async def get_national_fuel_price() -> dict:
     latest = data["response"]["data"][0]
         
     return {
-        "price_per_gallon": latest["value"],
+        "price_per_gallon": float(latest["value"]),
         "period": latest["period"],
         "unit": "dollars per gallon",
         "area": "National Average (US)",
