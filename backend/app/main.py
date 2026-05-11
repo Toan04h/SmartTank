@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import fuel
+from app.routers import fuel, trips
 
 app = FastAPI(
     title="SmartTank API",
@@ -8,7 +8,7 @@ app = FastAPI(
 )
 
 app.include_router(fuel.router)
-
+app.include_router(trips.router)
 
 @app.get("/")
 def root():
