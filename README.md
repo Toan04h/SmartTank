@@ -51,7 +51,7 @@ npm run dev
 ## Team
 
 - [toan04h](https://github.com/toan04h)
-- Teammate (link when they join)
+- [jtran0027](https://github.com/jtran0027)
 
 ## License
 MIT
