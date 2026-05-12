@@ -17,10 +17,14 @@ def calculate_trip_cost(
     Returns: 
         dict: gallon_used, trip_cost, co2_kg
     """
-    gallons_used = round(distance / mpg, 2) 
-    
+    if mpg <= 0:
+        raise ValueError("MPG must be greater than 0")
+    if distance <= 0:
+        raise ValueError("Distance must be greater than 0")
+    if fuel_price <= 0:
+        raise ValueError("Fuel price must be greater than 0")
+    gallons_used = round(distance / mpg, 2)
     trip_cost = round(gallons_used * fuel_price, 2)
-    
     co2_kg = round(gallons_used * 8.887, 2)
     
     return {
