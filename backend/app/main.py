@@ -1,11 +1,16 @@
 from fastapi import FastAPI
 from app.routers import fuel, trips
+from app.core.database import init_db
 
 app = FastAPI(
     title="SmartTank API",
     description="Fuel tracking and route optimization backend",
     version="0.1.0"
 )
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 app.include_router(fuel.router)
 app.include_router(trips.router)
