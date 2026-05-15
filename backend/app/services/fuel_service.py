@@ -1,10 +1,6 @@
 import httpx
-import os
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
-
-EIA_API_KEY = os.getenv("EIA_API_KEY")
 EIA_BASE_URL = "https://api.eia.gov/v2"
 
 async def get_national_fuel_price() -> dict: 
@@ -14,7 +10,7 @@ async def get_national_fuel_price() -> dict:
     """
     url = f"{EIA_BASE_URL}/petroleum/pri/gnd/data/"
     params = {
-        "api_key": EIA_API_KEY,
+        "api_key": settings.EIA_API_KEY,
         "frequency": "weekly",
         "data[0]": "value",
         "facets[product][]": "EPM0",
