@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, EmailStr
+from typing_extensions import Annotated
 
 class UserRegister(BaseModel): 
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: Annotated[str, Field(min_length=8, max_length=72)]
     
 class UserLogin(BaseModel):
     email: EmailStr

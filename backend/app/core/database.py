@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, Session, create_engine
 from app.core.config import settings
+from app.models.user import User # noqa: F401
 
 engine = create_engine(
     settings.DATABASE_URL,
