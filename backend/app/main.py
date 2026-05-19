@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import fuel, trips, auth
+from app.routers import fuel, trips, auth, trip_log
 from app.core.database import init_db
 
 app = FastAPI(
@@ -15,6 +15,7 @@ def on_startup():
 app.include_router(fuel.router)
 app.include_router(trips.router)
 app.include_router(auth.router)
+app.include_router(trip_log.router)
 
 @app.get("/")
 def root():
