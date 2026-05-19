@@ -13,8 +13,8 @@ class VehicleCatalog(SQLModel, table=True):
     model: str
     year: int 
     fuel_type: str
-    city_mpg: float
-    highway_mpg: float
-    combined_mpg: float
+    city_mpg: Optional[float] = None
+    highway_mpg: Optional[float] = None
+    combined_mpg: Optional[float] = None
     nhtsa_vehicle_id: Optional[str] = None
     

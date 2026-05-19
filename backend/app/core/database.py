@@ -4,6 +4,7 @@ from app.models.user import User # noqa: F401
 from app.models.vehicle_catalog import VehicleCatalog # noqa: F401
 from app.models.user_vehicle import UserVehicle # noqa: F401
 from app.models.trip import Trip # noqa: F401
+from typing import Generator
 
 engine = create_engine(
     settings.DATABASE_URL,
@@ -13,6 +14,6 @@ engine = create_engine(
 def init_db():
     SQLModel.metadata.create_all(engine)
     
-def get_session():
-    with Session(engine) as session:
+def get_session() -> Generator:
+    with Session(engine, expire_on_commit=False) as session:
         yield session

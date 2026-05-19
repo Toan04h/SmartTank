@@ -6,7 +6,7 @@ from typing import Optional
 class UserVehicle(SQLModel, table=True):
     __tablename__ = "user_vehicles" # type: ignore
     
-    id: Optional[uuid.UUID] = Field(
+    id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True
     )
