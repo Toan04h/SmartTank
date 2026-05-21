@@ -47,7 +47,7 @@ async def search_vehicle(make: str, model: str, year: int) -> dict:
             "nhtsa_vehicle_id": str(matched.get("Model_ID")),
             "fuel_type": None,
             "city_mpg": None,
-            "highay_mpg": None,
+            "highway_mpg": None,
             "combined_mpg": None
         }
     
