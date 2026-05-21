@@ -30,7 +30,7 @@ async def user_login(
 ):
     user = get_user_by_email(request.email, session)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or passowrd")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
     if not verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
