@@ -3,13 +3,43 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
+class AddVehicleRequest(BaseModel):
+    # Vehicle option data
+    epa_vehicle_id: str
+    description: Optional[str] = None
+    make: str
+    model: str
+    year: int 
+    fuel_type: Optional[str] = None
+    city_mpg: Optional[float] = None
+    highway_mpg: Optional[float] = None
+    combined_mpg: Optional[float] = None
+    nhtsa_vehicle_id: Optional[str] = None
+    # Garage specific
+    nickname: Optional[str] = None
+    mpg_override: Optional[float] = None
+    is_default: bool = False
+
+class VehicleOptionSelected(BaseModel):
+    make: str
+    model: str
+    year: int
+    epa_vehicle_id: str
+    description: Optional[str]
+    city_mpg: Optional[float]
+    highway_mpg: Optional[float]
+    combined_mpg: Optional[float]
+    fuel_type: Optional[str]
+    nhtsa_vehicle_id: Optional[str]
+
 class VehicleSearchRequest(BaseModel):
     make: str
     model: str
     year: int
     
 class VehicleSearchResponse(BaseModel):
-    id: uuid.UUID
+    epa_vehicle_id: str
+    description: Optional[str] = None
     make: str
     model: str
     year: int

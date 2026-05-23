@@ -1,40 +1,34 @@
 import uuid
 from fastapi import HTTPException
 from datetime import datetime
-from sqlmodel import Session, select, update, delete, col
+from sqlmodel import Session, select
 from app.models.vehicle_catalog import VehicleCatalog
 from app.models.user_vehicle import UserVehicle
-from app.models.user import User
-from app.schemas.vehicle import UserVehicleCreate
-from app.services.nhtsa_service import search_vehicle
+from app.schemas.vehicle import UserVehicleCreate, VehicleOptionSelected
 
-async def search_and_cache_vehicle(
-                            make: str, 
-                            model: str, 
-                            year: int, 
+async def cache_vehicle_option(
+                            vehicle_option: VehicleOptionSelected, 
                             session: Session
 ) -> VehicleCatalog:
     """Search NHTSA for vehicle, caches in catalog if not already there."""
     vehicle_catalog = session.exec(
         select(VehicleCatalog).where(
-            VehicleCatalog.make == make,
-            VehicleCatalog.model == model,
-            VehicleCatalog.year == year
+            VehicleCatalog.epa_vehicle_id==vehicle_option.epa_vehicle_id         
         )
     ).first()
     
     if vehicle_catalog is None:
-        vehicle = await search_vehicle(make, model, year)
-        
         vehicle_catalog = VehicleCatalog(
-            make = make,
-            model = model,
-            year = year, 
-            fuel_type = vehicle["fuel_type"],
-            city_mpg= vehicle["city_mpg"],
-            highway_mpg = vehicle["highway_mpg"],
-            combined_mpg = vehicle["combined_mpg"],
-            nhtsa_vehicle_id = vehicle["nhtsa_vehicle_id"]
+            epa_vehicle_id=vehicle_option.epa_vehicle_id,
+            description=vehicle_option.description,
+            make=vehicle_option.make,
+            model=vehicle_option.model,
+            year=vehicle_option.year,
+            fuel_type=vehicle_option.fuel_type,
+            city_mpg=vehicle_option.city_mpg,
+            highway_mpg=vehicle_option.highway_mpg,
+            combined_mpg=vehicle_option.combined_mpg,
+            nhtsa_vehicle_id=vehicle_option.nhtsa_vehicle_id
         )
         session.add(vehicle_catalog)
         session.commit()
