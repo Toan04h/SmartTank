@@ -1,8 +1,13 @@
 import uuid
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
-from app.schemas.vehicle import UserVehicleCreate, UserVehicleResponse, VehicleSearchRequest, VehicleSearchResponse
-from app.services.vehicle_service import search_and_cache_vehicle, delete_user_vehicle, add_user_vehicle, get_user_vehicles
+from app.schemas.vehicle import (
+    AddVehicleRequest, VehicleOptionSelected, 
+    UserVehicleCreate, UserVehicleResponse, 
+    VehicleSearchRequest, VehicleSearchResponse
+)
+from app.services.vehicle_service import cache_vehicle_option, delete_user_vehicle, add_user_vehicle, get_user_vehicles
+from app.services.nhtsa_service import get_vehicle_options
 from app.models.user import User
 from app.models.user_vehicle import UserVehicle
 from app.core.dependencies import get_current_user
@@ -13,17 +18,15 @@ router = APIRouter(
     tags=["vehicles"]
 )
 
-@router.post("/search", response_model=VehicleSearchResponse)
+@router.post("/search", response_model=list[VehicleSearchResponse])
 async def vehicle_search(
-    request: VehicleSearchRequest,
-    session: Session = Depends(get_session)
+    request: VehicleSearchRequest
 ):
     try:
-        result = await search_and_cache_vehicle(
+        result = await get_vehicle_options(
             request.make, 
             request.model, 
-            request.year, 
-            session
+            request.year 
         )
         return result
     except HTTPException:
@@ -31,18 +34,44 @@ async def vehicle_search(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+    
 @router.post("", response_model=UserVehicleResponse, status_code=201)
 async def add_vehicle(
-    vehicle_data: UserVehicleCreate,
+    request: AddVehicleRequest,
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    try:
-        return await add_user_vehicle(vehicle_data, user.id, session)
+    try: 
+        vehicle_option = VehicleOptionSelected(
+            epa_vehicle_id=request.epa_vehicle_id,
+            description=request.description,
+            make=request.make,
+            model=request.model,
+            year=request.year,
+            fuel_type=request.fuel_type,
+            city_mpg=request.city_mpg,
+            highway_mpg=request.highway_mpg,
+            combined_mpg=request.combined_mpg,
+            nhtsa_vehicle_id=request.nhtsa_vehicle_id
+        )
+        catalog_entry = await cache_vehicle_option(vehicle_option, session)
+        
+        garage_data = UserVehicleCreate(
+            catalog_id=catalog_entry.id,
+            nickname=request.nickname,
+            make=request.make,
+            model=request.model,
+            year=request.year,
+            mpg_override=request.mpg_override,
+            is_default=request.is_default
+        )
+        
+        return await add_user_vehicle(garage_data, user.id, session)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
 
 @router.get("/garage", response_model=list[UserVehicleResponse])
 async def user_vehicles(
