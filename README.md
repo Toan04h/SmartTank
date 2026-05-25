@@ -36,10 +36,7 @@ A fuel tracking and route optimization app that helps drivers monitor fuel usage
 ```bash
 docker run --name smarttank-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=smarttank -p 5432:5432 -d postgres
 ```
-2. Run the schema file to create the tables:
-```powershell
-Get-Content .\smarttank.sql | docker exec -i smarttank-db psql -U postgres -d smarttank
-```
+Tables are created automatically when the backend starts.
 
 ### Backend
 ```bash
