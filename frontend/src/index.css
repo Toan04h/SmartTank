@@ -128,3 +128,9 @@
     @apply font-sans;
     }
 }
+
+[data-sonner-toast] {
+    font-size: 1.1rem !important;
+    padding: 16px 20px !important;
+    min-width: 360px !important;
+}

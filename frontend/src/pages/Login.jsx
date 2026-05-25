@@ -56,7 +56,7 @@ function Login() {
                     <button
                         type="button"
                         onClick={() => setSeePassword(!seePassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                         {seePassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -64,7 +64,7 @@ function Login() {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg"
+                    className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg cursor-pointer"
                 >
                     Login
                 </button>
