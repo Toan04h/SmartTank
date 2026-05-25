@@ -1,12 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Toaster } from './components/ui/sonner'
+import { Toaster } from 'sonner'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
 function App() {
     return (
         <BrowserRouter>
-            <Toaster />
+            {/* Notification Badge */}
+            <Toaster position="top-center" richColors duration={4000} />
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />

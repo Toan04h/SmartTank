@@ -15,6 +15,16 @@ function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault() // stop refresh
 
+        if (password.length < 8) {
+            toast.error("Password is not 8 characters or more")
+            return
+        }
+
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match")
+            return
+        }
+
         const response = await fetch("http://localhost:8000/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -57,7 +67,7 @@ function Register() {
                     <button
                         type="button"
                         onClick={() => setSeePassword(!seePassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                         {seePassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -74,17 +84,18 @@ function Register() {
                     <button
                         type="button"
                         onClick={() => setSeeConfirm(!seeConfirm)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                         {seeConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                 </div>
                 {/* Error Text */}
                 {confirmPassword && password !== confirmPassword && (<p className="text-red-500 text-sm">Passwords do not match</p>)}
+                {password.length > 0 && password.length < 8 && (<p className="text-red-500 text-sm">Password must be 8 characters or longer</p>)}
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg"
+                    className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg cursor-pointer"
                 >
                     Register
                 </button>
