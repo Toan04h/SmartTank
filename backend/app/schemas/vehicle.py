@@ -1,53 +1,42 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 class AddVehicleRequest(BaseModel):
-    # Vehicle option data
-    epa_vehicle_id: str
-    description: Optional[str] = None
-    make: str
-    model: str
-    year: int 
-    fuel_type: Optional[str] = None
-    city_mpg: Optional[float] = None
-    highway_mpg: Optional[float] = None
-    combined_mpg: Optional[float] = None
-    nhtsa_vehicle_id: Optional[str] = None
+    catalog_id: uuid.UUID
     # Garage specific
     nickname: Optional[str] = None
     mpg_override: Optional[float] = None
     is_default: bool = False
-
-class VehicleOptionSelected(BaseModel):
-    make: str
-    model: str
-    year: int
-    epa_vehicle_id: str
-    description: Optional[str]
-    city_mpg: Optional[float]
-    highway_mpg: Optional[float]
-    combined_mpg: Optional[float]
-    fuel_type: Optional[str]
-    nhtsa_vehicle_id: Optional[str]
-
-class VehicleSearchRequest(BaseModel):
-    make: str
-    model: str
-    year: int
     
 class VehicleSearchResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
     epa_vehicle_id: str
     description: Optional[str] = None
     make: str
     model: str
     year: int
+    drive: Optional[str] = None
+    cylinders: Optional[int] = None
+    displacement: Optional[float] = None
+    vehicle_class: Optional[str] = None
+    atv_type: Optional[str] = None
     fuel_type: Optional[str] = None 
     city_mpg: Optional[float] = None
     highway_mpg: Optional[float] = None
     combined_mpg: Optional[float] = None
-    nhtsa_vehicle_id: Optional[str] = None
+    # Electric/alternative fuel support
+    fuel_type_2: Optional[str] = None 
+    city_mpg_alt: Optional[float] = None
+    highway_mpg_alt: Optional[float] = None
+    combined_mpg_alt: Optional[float] = None
+    
+class VehicleSearchRequest(BaseModel):
+    make: str
+    model: str
+    year: int
     
 class UserVehicleCreate(BaseModel):
     catalog_id: uuid.UUID

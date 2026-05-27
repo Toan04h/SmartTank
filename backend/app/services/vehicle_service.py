@@ -1,40 +1,31 @@
 import uuid
+from sqlmodel import col
 from fastapi import HTTPException
 from datetime import datetime
 from sqlmodel import Session, select
 from app.models.vehicle_catalog import VehicleCatalog
 from app.models.user_vehicle import UserVehicle
-from app.schemas.vehicle import UserVehicleCreate, VehicleOptionSelected
+from app.schemas.vehicle import UserVehicleCreate
 
-async def cache_vehicle_option(
-                            vehicle_option: VehicleOptionSelected, 
-                            session: Session
-) -> VehicleCatalog:
-    """Search NHTSA for vehicle, caches in catalog if not already there."""
-    vehicle_catalog = session.exec(
+def search_vehicle_from_db(
+    make: str,
+    model: str, 
+    year: int,
+    session: Session
+) -> list[VehicleCatalog]:
+    vehicle_list = list(session.exec(
         select(VehicleCatalog).where(
-            VehicleCatalog.epa_vehicle_id==vehicle_option.epa_vehicle_id         
+            col(VehicleCatalog.make).ilike(make),
+            col(VehicleCatalog.model).ilike(f"%{model}%"),
+            VehicleCatalog.year == year
         )
-    ).first()
-    
-    if vehicle_catalog is None:
-        vehicle_catalog = VehicleCatalog(
-            epa_vehicle_id=vehicle_option.epa_vehicle_id,
-            description=vehicle_option.description,
-            make=vehicle_option.make,
-            model=vehicle_option.model,
-            year=vehicle_option.year,
-            fuel_type=vehicle_option.fuel_type,
-            city_mpg=vehicle_option.city_mpg,
-            highway_mpg=vehicle_option.highway_mpg,
-            combined_mpg=vehicle_option.combined_mpg,
-            nhtsa_vehicle_id=vehicle_option.nhtsa_vehicle_id
+    ).all())
+    if not vehicle_list:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{year} {make} {model} not found in vehicle catalog"
         )
-        session.add(vehicle_catalog)
-        session.commit()
-        session.refresh(vehicle_catalog)
-        
-    return vehicle_catalog
+    return vehicle_list
     
 async def add_user_vehicle(
     vehicle_data: UserVehicleCreate,
