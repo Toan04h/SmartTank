@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.trip import TripCalculationRequest, TripCalculationResponse
 from app.services.calculation_service import calculate_trip_cost
-from app.services.fuel_service import get_national_fuel_price
+from app.services.fuel_service import get_fuel_price
 from app.core.dependencies import get_current_user
 from app.models.user import User 
 
@@ -17,7 +17,7 @@ async def calculate_trip(
 ):
     try:
         if request.fuel_price is None: 
-            price_data = await get_national_fuel_price()
+            price_data = await get_fuel_price()
             fuel_price = price_data["price_per_gallon"]
         else:
             fuel_price = request.fuel_price
