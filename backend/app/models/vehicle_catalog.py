@@ -17,10 +17,19 @@ class VehicleCatalog(SQLModel, table=True):
     make: str 
     model: str
     year: int 
+    drive: Optional[str] = None
+    cylinders: Optional[int] = None
+    displacement: Optional[float] = None
+    vehicle_class: Optional[str] = None
+    atv_type: Optional[str] = None
     fuel_type: Optional[str] = None
     city_mpg: Optional[float] = None
     highway_mpg: Optional[float] = None
     combined_mpg: Optional[float] = None
-    nhtsa_vehicle_id: Optional[str] = None
+    # Electric/alternative fuel data
+    fuel_type_2: Optional[str] = None 
+    city_mpg_alt: Optional[float] = None
+    highway_mpg_alt: Optional[float] = None
+    combined_mpg_alt: Optional[float] = None
     
     

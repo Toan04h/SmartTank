@@ -1,15 +1,18 @@
 import uuid
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
-from app.schemas.vehicle import (
-    AddVehicleRequest, VehicleOptionSelected, 
+from app.schemas.vehicle import ( 
     UserVehicleCreate, UserVehicleResponse, 
-    VehicleSearchRequest, VehicleSearchResponse
+    VehicleSearchRequest, VehicleSearchResponse,
+    AddVehicleRequest
 )
-from app.services.vehicle_service import cache_vehicle_option, delete_user_vehicle, add_user_vehicle, get_user_vehicles
-from app.services.nhtsa_service import get_vehicle_options
+from app.services.vehicle_service import (
+    search_vehicle_from_db, delete_user_vehicle, 
+    add_user_vehicle, get_user_vehicles
+)
 from app.models.user import User
 from app.models.user_vehicle import UserVehicle
+from app.models.vehicle_catalog import VehicleCatalog
 from app.core.dependencies import get_current_user
 from app.core.database import get_session
 
@@ -20,15 +23,16 @@ router = APIRouter(
 
 @router.post("/search", response_model=list[VehicleSearchResponse])
 async def vehicle_search(
-    request: VehicleSearchRequest
+    request: VehicleSearchRequest,
+    session: Session = Depends(get_session)
 ):
     try:
-        result = await get_vehicle_options(
+        return search_vehicle_from_db(
             request.make, 
             request.model, 
-            request.year 
+            request.year,
+            session
         )
-        return result
     except HTTPException:
         raise
     except Exception as e:
@@ -42,26 +46,19 @@ async def add_vehicle(
     session: Session = Depends(get_session)
 ):
     try: 
-        vehicle_option = VehicleOptionSelected(
-            epa_vehicle_id=request.epa_vehicle_id,
-            description=request.description,
-            make=request.make,
-            model=request.model,
-            year=request.year,
-            fuel_type=request.fuel_type,
-            city_mpg=request.city_mpg,
-            highway_mpg=request.highway_mpg,
-            combined_mpg=request.combined_mpg,
-            nhtsa_vehicle_id=request.nhtsa_vehicle_id
-        )
-        catalog_entry = await cache_vehicle_option(vehicle_option, session)
-        
+        catalog = session.get(VehicleCatalog, request.catalog_id)
+        if catalog is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Vehicle not found in catalog"
+            )
+            
         garage_data = UserVehicleCreate(
-            catalog_id=catalog_entry.id,
+            catalog_id=request.catalog_id,
             nickname=request.nickname,
-            make=request.make,
-            model=request.model,
-            year=request.year,
+            make=catalog.make,
+            model=catalog.model,
+            year=catalog.year,
             mpg_override=request.mpg_override,
             is_default=request.is_default
         )

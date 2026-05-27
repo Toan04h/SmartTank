@@ -28,3 +28,6 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# EPA data
+backend/epa_vehicles.csv
