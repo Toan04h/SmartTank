@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import fuel, trips, auth, trip_log, vehicles
+from app.routers import fuel, trips, auth, trip_log, vehicles, users
 from app.core.database import init_db
 
 app = FastAPI(
@@ -20,6 +20,7 @@ app.add_middleware(
 def on_startup():
     init_db()
 
+app.include_router(users.router)
 app.include_router(fuel.router)
 app.include_router(trips.router)
 app.include_router(auth.router)

@@ -19,7 +19,12 @@ async def log_trip(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        result = await create_trip(trip_data, current_user.id, session)
+        result = await create_trip(
+            trip_data, 
+            current_user.id, 
+            current_user.state, 
+            session
+        )
         return result
     except HTTPException:
         raise

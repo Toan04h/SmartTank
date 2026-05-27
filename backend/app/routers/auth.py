@@ -20,7 +20,12 @@ async def user_register(
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed = hash_password(request.password)
-    create_user(email=request.email, hashed_password=hashed, session=session)
+    create_user(
+        email=request.email, 
+        hashed_password=hashed, 
+        state=request.state,
+        zip_code=request.zip_code,
+        session=session)
     return {"message": "Account created successfully"}
 
 @router.post("/login", response_model=TokenResponse)

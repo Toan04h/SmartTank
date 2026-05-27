@@ -5,8 +5,9 @@ from app.models.user_vehicle import UserVehicle
 from app.models.vehicle_catalog import VehicleCatalog
 from app.models.trip import Trip
 from app.schemas.trip_log import TripCreate
-from app.services.fuel_service import get_national_fuel_price
+from app.services.fuel_service import get_fuel_price
 from app.services.calculation_service import calculate_trip_cost
+from typing import Optional
 
 def get_vehicle_mpg(vehicle: UserVehicle, session: Session) -> float:
     """Gets MPG for a vehicle - uses override if set, otherwise catalog value."""
@@ -37,6 +38,7 @@ def get_vehicle_mpg(vehicle: UserVehicle, session: Session) -> float:
 async def create_trip(
     trip_data: TripCreate,
     user_id: uuid.UUID,
+    user_state: Optional[str],
     session: Session
 ) -> Trip:
     """Creates and saves a trip for the authenticated user."""
@@ -54,7 +56,7 @@ async def create_trip(
         )
      
     mpg = get_vehicle_mpg(vehicle, session)
-    price_data = await get_national_fuel_price()
+    price_data = await get_fuel_price(state=user_state)
     fuel_price = price_data["price_per_gallon"]
     trip_calculation = calculate_trip_cost(trip_data.distance, mpg, fuel_price)
     

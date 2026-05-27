@@ -21,6 +21,8 @@ class User(SQLModel, table=True):
     )
     hashed_password: str
     full_name: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
