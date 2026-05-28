@@ -72,11 +72,18 @@ async def create_trip(
         co2_kg=trip_calculation["co2_kg"],
         trip_date=trip_data.trip_date,
         tag=trip_data.tag,
-        notes=trip_data.notes
+        notes=trip_data.notes,
+        # GPS coordinates, empty for now
+        start_lat=None,
+        end_lat=None,
+        start_lng=None,
+        end_lng=None,
+        start_time=None,
+        end_time=None
     )
     
     session.add(trip)
-    session.commit
+    session.commit()
     
     return trip
     
