@@ -14,7 +14,15 @@ class Trip(SQLModel, table=True):
     vehicle_id: uuid.UUID = Field(foreign_key="user_vehicles.id")
     start_location: str
     end_location: str
-    distance: float
+    distance: Optional[float] = None
+    # GPS coordinates
+    start_lat: Optional[str] = None
+    end_lat: Optional[str] = None
+    start_lng: Optional[str] = None
+    end_lng: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    # Trip calculation
     gallons_used: float
     fuel_price: float
     trip_cost: float
