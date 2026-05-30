@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { toast } from 'sonner'
+import { API_BASE_URL } from "../api/config"
 
 function Login() {
     const [seePassword, setSeePassword] = useState(false)
