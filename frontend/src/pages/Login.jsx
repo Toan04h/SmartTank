@@ -25,6 +25,15 @@ function Login() {
         // Redirect user to dashboard on success
         if (response.ok) {
             localStorage.setItem("token", data.access_token)
+            
+            // Get's user's email to be displayed
+            const profileResponse = await fetch("http://localhost:8000/users/profile", {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${data.access_token}` }
+            })
+            const profile = await profileResponse.json()
+            localStorage.setItem("email", profile.email)
+
             toast.success("Login successful!")
             navigate("/")
         } else {
