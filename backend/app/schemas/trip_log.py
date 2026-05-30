@@ -1,23 +1,45 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 
 class TripCreate(BaseModel):
-    start_location: str
-    end_location: str
-    distance: float = Field(gt=0, description="Distance in miles")
+    start_lat: Optional[float] = None
+    end_lat: Optional[float] = None
+    start_lng: Optional[float] = None
+    end_lng: Optional[float] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None 
+    start_location: Optional[str] = None
+    end_location: Optional[str] = None
+    distance: Optional[float] = Field(default=None, gt=0, description="Distance in miles")
     vehicle_id: uuid.UUID
     trip_date: Optional[datetime] = None
     tag: Optional[str] = None
     notes: Optional[str] = None
     
+@model_validator(mode="after")
+def validate_trip_mode(self) -> "TripCreate":
+    has_gps = all([self.start_lat, self.start_long, self.end_lat, self.end_lng])
+    has_manual = self.distance is not None
+    if not has_gps and not has_manual:
+        raise ValueError(
+            "A trip must include either GPS coordinates or a manual distance"
+        )
+    return self   
+    
 class TripResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     vehicle_id: uuid.UUID
-    start_location: str
-    end_location: str
+    start_lat: Optional[float] = None
+    end_lat: Optional[float] = None
+    start_lng: Optional[float] = None
+    end_lng: Optional[float] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None 
+    start_location: Optional[str] = None
+    end_location: Optional[str] = None
     distance: float
     gallons_used: float
     fuel_price: float
