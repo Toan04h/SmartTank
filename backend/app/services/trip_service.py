@@ -6,7 +6,7 @@ from app.models.vehicle_catalog import VehicleCatalog
 from app.models.trip import Trip
 from app.schemas.trip_log import TripCreate
 from app.services.fuel_service import get_fuel_price
-from app.services.calculation_service import calculate_trip_cost
+from app.services.calculation_service import calculate_trip_cost, haversince_distance
 from typing import Optional
 
 def get_vehicle_mpg(vehicle: UserVehicle, session: Session) -> float:
@@ -58,6 +58,18 @@ async def create_trip(
     mpg = get_vehicle_mpg(vehicle, session)
     price_data = await get_fuel_price(state=user_state)
     fuel_price = price_data["price_per_gallon"]
+    if trip_data.distance is None:
+        assert trip_data.start_lat is not None
+        assert trip_data.start_lng is not None
+        assert trip_data.end_lat is not None
+        assert trip_data.end_lng is not None
+        trip_data.distance = haversince_distance(
+            trip_data.start_lat,
+            trip_data.start_lng,
+            trip_data.end_lat,
+            trip_data.end_lng
+        )
+        
     trip_calculation = calculate_trip_cost(trip_data.distance, mpg, fuel_price)
     
     trip = Trip(
@@ -74,16 +86,17 @@ async def create_trip(
         tag=trip_data.tag,
         notes=trip_data.notes,
         # GPS coordinates, empty for now
-        start_lat=None,
-        end_lat=None,
-        start_lng=None,
-        end_lng=None,
-        start_time=None,
-        end_time=None
+        start_lat=trip_data.start_lat,
+        end_lat=trip_data.end_lat,
+        start_lng=trip_data.start_lng,
+        end_lng=trip_data.end_lng,
+        start_time=trip_data.start_time,
+        end_time=trip_data.end_time
     )
     
     session.add(trip)
     session.commit()
+    session.refresh(trip)
     
     return trip
     
