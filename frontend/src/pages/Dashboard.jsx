@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Fuel } from "lucide-react"
+import { API_BASE_URL } from "../api/config"
 
 function Dashboard() {
     const email = localStorage.getItem("email")
@@ -11,7 +12,7 @@ function Dashboard() {
 
     // Fetching the fuel price
     useEffect(() => {
-        fetch(`http://localhost:8000/fuel/price`)
+        fetch(`${API_BASE_URL}/fuel/price`)
         .then(res => res.json())
         .then(data => {
             setFuelPrice(data.price_per_gallon)
@@ -21,7 +22,7 @@ function Dashboard() {
 
     // Fetching user trips
     useEffect(() => {
-        fetch(`http://localhost:8000/trips`, {
+        fetch(`${API_BASE_URL}/trips`, {
             headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
         })
         .then(res => {
