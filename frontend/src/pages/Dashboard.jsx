@@ -13,9 +13,12 @@ function Dashboard() {
     // Fetching the fuel price
     useEffect(() => {
         fetch(`${API_BASE_URL}/fuel/price`)
-        .then(res => res.json())
+        .then(res => {
+            if (res.ok) return res.json()
+            return null
+        })
         .then(data => {
-            setFuelPrice(data.price_per_gallon)
+            if (data) setFuelPrice(data.price_per_gallon)
             setIsFuelPriceLoading(false)
         })
     }, [])
