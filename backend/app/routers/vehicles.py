@@ -6,9 +6,15 @@ from app.schemas.vehicle import (
     VehicleSearchRequest, VehicleSearchResponse,
     AddVehicleRequest
 )
+from app.schemas.comparison import (
+    VehicleComparisonResult, CompareRequest
+)
 from app.services.vehicle_service import (
     search_vehicle_from_db, delete_user_vehicle, 
     add_user_vehicle, get_user_vehicles
+)
+from app.services.comparison_service import (
+    compare_vehicle
 )
 from app.models.user import User
 from app.models.user_vehicle import UserVehicle
@@ -20,6 +26,20 @@ router = APIRouter(
     prefix="/vehicles",
     tags=["vehicles"]
 )
+
+@router.post("/compare", response_model=list[VehicleComparisonResult])
+async def compare_vehicles(
+    request: CompareRequest,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    try:
+        return await compare_vehicle(request, user, session)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/search", response_model=list[VehicleSearchResponse])
 async def vehicle_search(
@@ -120,3 +140,4 @@ async def delete_vehicle(
     session: Session = Depends(get_session)
 ):
     return delete_user_vehicle(vehicle_id, user.id, session)
+

@@ -11,7 +11,8 @@ class VehicleCatalog(SQLModel, table=True):
     )
     epa_vehicle_id: Optional[str] = Field(
         default=None,
-        sa_column=Column(String, unique=True, index=True)
+        unique=True,
+        index=True
     )
     description: Optional[str] = None
     make: str 
