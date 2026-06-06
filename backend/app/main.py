@@ -20,10 +20,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def on_startup():
-    init_db()
-
 app.include_router(users.router)
 app.include_router(fuel.router)
 app.include_router(trips.router)

@@ -4,14 +4,14 @@ from sqlmodel import Session, select
 from app.schemas.vehicle import ( 
     UserVehicleCreate, UserVehicleResponse, 
     VehicleSearchRequest, VehicleSearchResponse,
-    AddVehicleRequest
+    AddVehicleRequest, VehicleStats
 )
 from app.schemas.comparison import (
     VehicleComparisonResult, CompareRequest
 )
 from app.services.vehicle_service import (
     search_vehicle_from_db, delete_user_vehicle, 
-    add_user_vehicle, get_user_vehicles
+    add_user_vehicle, get_user_vehicles,build_vehicle_stat
 )
 from app.services.comparison_service import (
     compare_vehicle
@@ -96,6 +96,19 @@ async def user_vehicles(
     session: Session = Depends(get_session)
 ):
     return get_user_vehicles(user.id, session)
+
+@router.get("/{vehicle_id}/stats", response_model=VehicleStats)
+async def get_vehicle_stats(
+    vehicle_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    try:
+        return await build_vehicle_stat(vehicle_id, user, session)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/{vehicle_id}/default", response_model=UserVehicleResponse)
 async def set_default_vehicle(

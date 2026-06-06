@@ -3,9 +3,53 @@ from sqlmodel import col
 from fastapi import HTTPException
 from datetime import datetime
 from sqlmodel import Session, select
+from app.models.user import User
+from app.models.trip import Trip
 from app.models.vehicle_catalog import VehicleCatalog
 from app.models.user_vehicle import UserVehicle
-from app.schemas.vehicle import UserVehicleCreate
+from app.schemas.vehicle import UserVehicleCreate, VehicleStats
+
+async def build_vehicle_stat(
+    vehicle_id: uuid.UUID,
+    user: User,
+    session: Session
+) -> VehicleStats:
+    
+    total_distance = 0
+    total_fuel = 0
+    total_cost = 0
+    total_co2 = 0
+    
+    trips = list(session.exec(
+        select(Trip).where(
+            Trip.user_id==user.id,
+            Trip.vehicle_id==vehicle_id
+        )
+    ).all())
+    
+    if not trips:
+        return VehicleStats(
+            total_trips=0,
+            total_distance=total_distance,
+            total_fuel=total_fuel,
+            total_cost=total_cost,
+            total_co2=total_co2
+        )
+        
+    for trip in trips:
+        if trip.distance is not None:
+            total_distance+=trip.distance
+        total_fuel+=trip.gallons_used
+        total_cost+=trip.trip_cost
+        total_co2+=trip.co2_kg
+    
+    return VehicleStats(
+        total_trips=len(trips),
+        total_distance=round(total_distance, 2),
+        total_fuel=round(total_fuel, 2),
+        total_cost=round(total_cost, 2),
+        total_co2=round(total_co2, 2)
+    )
 
 def search_vehicle_from_db(
     make: str,
@@ -52,7 +96,7 @@ async def add_user_vehicle(
         model = vehicle_data.model,
         year = vehicle_data.year,
         mpg_override = vehicle_data.mpg_override,
-        is_default=True,
+        is_default=False,
         created_at=datetime.utcnow()
     )
     
