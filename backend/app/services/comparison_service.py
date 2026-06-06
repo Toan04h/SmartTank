@@ -1,4 +1,3 @@
-import uuid
 from fastapi import HTTPException
 from sqlmodel import Session, select
 from app.models.user import User
@@ -15,7 +14,6 @@ async def compare_vehicle(
 ) -> list[VehicleComparisonResult]:
 
     comparison_list = []
-    print("Fetching default vehicle...")
     user_default_vehicle = session.exec(
         select(UserVehicle).where(
             UserVehicle.user_id == user.id,
@@ -29,7 +27,6 @@ async def compare_vehicle(
             detail="Vehicle not found"
         )
         
-    print("Fetching catalog...")
     user_vehicle_catalog = session.exec(
         select(VehicleCatalog).where(
             VehicleCatalog.id == user_default_vehicle.catalog_id
@@ -42,7 +39,6 @@ async def compare_vehicle(
             detail="Vehicle not found in vehicle catalog"
         )
         
-    print("Fetching trips...")
     trips = list(session.exec(
         select(Trip).where(
             Trip.vehicle_id == user_default_vehicle.id,
@@ -63,13 +59,11 @@ async def compare_vehicle(
             status_code=404,
             detail="No MPG information available to calculate trips cost"
         )
-    print("Done fetching")    
     baseline_total_cost = 0
     total_gallons = 0
     total_co2 = 0
     total_distance = 0
         
-    print("Fetching trips...")
     for trip in trips:
         if trip.distance is None:
             continue
