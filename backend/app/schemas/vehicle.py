@@ -3,6 +3,13 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
+class VehicleStats(BaseModel):
+    total_trips: int
+    total_distance: float
+    total_fuel: float
+    total_cost: float
+    total_co2: float
+
 class AddVehicleRequest(BaseModel):
     catalog_id: uuid.UUID
     # Garage specific
@@ -48,6 +55,8 @@ class UserVehicleCreate(BaseModel):
     is_default: bool = False
 
 class UserVehicleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: uuid.UUID
     user_id: uuid.UUID
     catalog_id: Optional[uuid.UUID] = None
