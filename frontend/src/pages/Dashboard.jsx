@@ -6,11 +6,34 @@ function Dashboard() {
     const email = localStorage.getItem("email")
     const username = email?.split("@")[0]
     const [fuelPrice, setFuelPrice] = useState(0.0)
-    const [trips, setTrips] = useState([])
     const [isFuelPriceLoading, setIsFuelPriceLoading] = useState(true)
     const [isTripsLoading, setIsTripsLoading] = useState(true)
+    const [dashboardStats, setDashboardStats] = useState({
+        total_trips: 0,
+        total_distance: 0.0,
+        total_fuel: 0.0,
+        total_cost: 0.0,
+        total_co2: 0.0,
+        recent_trips: [],
+        default_vehicle: 0
+    })
 
-    // Fetching the fuel price
+    // Fetching user dashboard stats
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/users/dashboard`, {
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+        })
+        .then(res => {
+            if (res.ok) return res.json()
+            return null
+        })
+        .then(data => {
+            if (data) setDashboardStats(data)
+            setIsTripsLoading(false)
+        })
+    }, [])
+
+    // Fetch fuel prices
     useEffect(() => {
         fetch(`${API_BASE_URL}/fuel/price`)
         .then(res => {
@@ -22,26 +45,6 @@ function Dashboard() {
             setIsFuelPriceLoading(false)
         })
     }, [])
-
-    // Fetching user trips
-    useEffect(() => {
-        fetch(`${API_BASE_URL}/trips`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
-        .then(res => {
-            if (res.ok) return res.json()
-            return []
-        })
-        .then(data => {
-            setTrips(data)
-            setIsTripsLoading(false)
-        })
-    }, [])
-
-    // User Trip Data
-    const totalSpent = trips.reduce((sum, t) => sum + t.trip_cost, 0)
-    const totalMiles = trips.reduce((sum, t) => sum + (t.distance || 0), 0)
-    const totalCO2 = trips.reduce((sum, t) => sum + t.co2_kg, 0)
 
     return (
         <div className="flex flex-col min-h-screen bg-background">
@@ -77,19 +80,19 @@ function Dashboard() {
                     ) : (
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">${totalSpent.toFixed(2)}</p>
+                                <p className="text-3xl font-bold text-foreground">${dashboardStats.total_cost}</p>
                                 <p className="text-sm text-muted-foreground mt-1">Spent</p>
                             </div>
                             <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">{trips.length}</p>
+                                <p className="text-3xl font-bold text-foreground">{dashboardStats.total_trips}</p>
                                 <p className="text-sm text-muted-foreground mt-1">Trips</p>
                             </div>
                             <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">{totalCO2.toFixed(1)}</p>
+                                <p className="text-3xl font-bold text-foreground">{dashboardStats.total_co2}</p>
                                 <p className="text-sm text-muted-foreground mt-1">CO2 (kg)</p>
                             </div>
                             <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">{totalMiles.toFixed(1)}</p>
+                                <p className="text-3xl font-bold text-foreground">{dashboardStats.total_distance}</p>
                                 <p className="text-sm text-muted-foreground mt-1">Miles</p>
                             </div>
                         </div>
@@ -105,11 +108,11 @@ function Dashboard() {
                             <div className="animate-pulse bg-secondary rounded-lg h-16" />
                             <div className="animate-pulse bg-secondary rounded-lg h-16" />
                         </div>
-                    ) : trips.length === 0 ? (
+                    ) : dashboardStats.recent_trips.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No trips logged yet.</p>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {trips.slice(-3).reverse().map(trip => (
+                            {dashboardStats.recent_trips.reverse().map(trip => (
                                 <div key={trip.id} className="bg-secondary rounded-lg p-3">
                                     <div className="flex justify-between items-start">
                                         <p className="text-base font-medium text-foreground">
