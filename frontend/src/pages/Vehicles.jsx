@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { Plus, CarFront, Dot } from "lucide-react"
+﻿import { useEffect, useState } from "react"
+import { Plus, CarFront, Dot, Ellipsis } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
 
@@ -10,8 +10,8 @@ function Vehicles() {
     const [model, setModel] = useState("")
     const [year, setYear] = useState("")
     const [searchResults, setSearchResults] = useState([])
+    const [isOpen, setIsOpen] = useState(null)
 
-    // Fetch user's vehicles
     useEffect(() => {
         fetch(`${API_BASE_URL}/vehicles/garage`, {
             headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
@@ -25,8 +25,7 @@ function Vehicles() {
         })
     }, [])
 
-    // Handles car search
-    const carSearching = async () => {
+    const carSearching = () => {
         fetch(`${API_BASE_URL}/vehicles/search`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -41,8 +40,7 @@ function Vehicles() {
         })
     }
 
-    // Handles car selection
-    async function handleCarSelect(car) {
+    function handleCarSelect(car) {
         fetch(`${API_BASE_URL}/vehicles`, {
             method: "POST",
             headers: {
@@ -59,12 +57,31 @@ function Vehicles() {
         })
     }
 
+    function handleDelete(carId) {
+        fetch(`${API_BASE_URL}/vehicles/${carId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
+        })
+        .then(res => {
+            if (res.ok) {
+                setIsOpen(null)
+                toast.success("Successfully removed the car.")
+                setVehicles(prev => prev.filter(car => car.id !== carId))
+            } else {
+                return null
+            }
+        })
+    }
+
     return (
         <div>
             {/* Header */}
             <div className="flex flex-row justify-between items-center bg-primary px-6 pt-8 pb-6">
                 <p className="text-3xl font-bold text-primary-foreground">My Garage</p>
-                <button onClick={() => setIsAdding(true)} className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/20 hover:bg-white/40 cursor-pointer text-primary-foreground text-base font-medium ">
+                <button onClick={() => setIsAdding(true)} className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/20 hover:bg-white/40 cursor-pointer text-primary-foreground text-base font-medium">
                     <Plus size={20} /> Add
                 </button>
             </div>
@@ -75,20 +92,35 @@ function Vehicles() {
             ) : (
                 <div className="flex flex-col gap-3 py-4">
                     {vehicles.map(car => (
-                        <div key={car.id} className="bg-card border border-border rounded-xl p-4 mx-4">
+                        <div key={car.id} className="relative bg-card border border-border rounded-xl p-4 mx-4">
                             {/* Top row: icon + title */}
                             <div className="flex flex-row items-center gap-4">
                                 <div className="bg-secondary rounded-xl p-4">
                                     <CarFront size={40} className="text-primary" />
                                 </div>
-                                <div>
+                                <div className="pr-8">
                                     <p className="text-lg font-bold text-foreground">{car.year} {car.make} {car.model}</p>
                                     <p className="text-sm text-muted-foreground">{car.nickname}</p>
                                 </div>
                             </div>
+
+                            {/* Dropdown menu */}
+                            <div className="absolute top-4 right-4">
+                                <button onClick={() => setIsOpen(isOpen === car.id ? null : car.id)} className="cursor-pointer p-1 rounded-lg hover:bg-secondary">
+                                    <Ellipsis size={24} />
+                                </button>
+                                {(isOpen === car.id) && (
+                                    <div className="absolute right-0 top-full mt-0 bg-card border border-border rounded-xl shadow-lg flex flex-col min-w-[130px] z-10 overflow-hidden">
+                                        {/* TODO: Add Edit button functionality (i.e. nickname, mpg, co2)*/}
+                                        <button className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-center text-foreground">Edit</button>
+                                        <button onClick={() => handleDelete(car.id)} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-center text-red-500">Delete</button>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Stats row */}
                             <div className="flex flex-row gap-4 mt-3">
-                                <p className="text-sm text-muted-foreground">MPG, Miles, CO2 </p>
+                                <p className="text-sm text-muted-foreground">MPG, Miles, CO2</p>
                             </div>
                         </div>
                     ))}
