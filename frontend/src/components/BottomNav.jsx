@@ -31,6 +31,12 @@ function BottomNav() {
                     <p className="text-sm">User</p>
                 </div>
             </Link>
+            <Link to="/login" className={location.pathname === "login" ? "text-primary" : "text-muted-foreground"}>
+                <div className="flex flex-col items-center gap-1">
+                    <User size={28}/>
+                    <p className="text-sm">Temp Login</p>
+                </div>
+            </Link>
         </nav>
     )
 }
