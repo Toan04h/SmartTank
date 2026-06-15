@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional
 
 class TripCreate(BaseModel):
@@ -29,6 +29,8 @@ def validate_trip_mode(self) -> "TripCreate":
     return self   
     
 class TripResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: uuid.UUID
     user_id: uuid.UUID
     vehicle_id: uuid.UUID
