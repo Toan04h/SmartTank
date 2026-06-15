@@ -11,7 +11,9 @@ function Vehicles() {
     const [year, setYear] = useState("")
     const [searchResults, setSearchResults] = useState([])
     const [isOpen, setIsOpen] = useState(null)
+    const [isSearching, setIsSearching] = useState(false)
 
+    // Fetch users garage
     useEffect(() => {
         fetch(`${API_BASE_URL}/vehicles/garage`, {
             headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
@@ -25,7 +27,9 @@ function Vehicles() {
         })
     }, [])
 
+    // Fetch user's car search
     const carSearching = () => {
+        setIsSearching(true)
         fetch(`${API_BASE_URL}/vehicles/search`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -36,10 +40,13 @@ function Vehicles() {
             return []
         })
         .then(data => {
+            if (data.length === 0) toast.error("Could not find any results.")
             setSearchResults(data)
+            setIsSearching(false)
         })
     }
 
+    // Add user's car
     function handleCarSelect(car) {
         fetch(`${API_BASE_URL}/vehicles`, {
             method: "POST",
@@ -57,6 +64,7 @@ function Vehicles() {
         })
     }
 
+    // Delete user's car
     function handleDelete(carId) {
         fetch(`${API_BASE_URL}/vehicles/${carId}`, {
             method: "DELETE",
@@ -77,9 +85,9 @@ function Vehicles() {
     }
 
     return (
-        <div>
+        <div className="flex flex-col h-[calc(100vh-4rem)] overflow-x-hidden">
             {/* Header */}
-            <div className="flex flex-row justify-between items-center bg-primary px-6 pt-8 pb-6">
+            <div className="flex flex-row justify-between items-center bg-primary px-6 pt-8 pb-6 shrink-0">
                 <p className="text-3xl font-bold text-primary-foreground">My Garage</p>
                 <button onClick={() => setIsAdding(true)} className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/20 hover:bg-white/40 cursor-pointer text-primary-foreground text-base font-medium">
                     <Plus size={20} /> Add
@@ -90,7 +98,7 @@ function Vehicles() {
             {vehicles.length === 0 ? (
                 <p className="text-center py-6 text-gray-500">No vehicles yet... Add some!</p>
             ) : (
-                <div className="flex flex-col gap-3 py-4">
+                <div className="flex flex-col gap-3 py-4 pb-6 flex-1 overflow-y-auto">
                     {vehicles.map(car => (
                         <div key={car.id} className="relative bg-card border border-border rounded-xl p-4 mx-4">
                             {/* Top row: icon + title */}
@@ -127,8 +135,9 @@ function Vehicles() {
                 </div>
             )}
 
-            {/* Adding Modal */}
-            {isAdding && <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            {/* Vehicle Adding Modal */}
+            {isAdding && 
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                 <div className="flex flex-col bg-card rounded-xl w-full max-w-xl p-6 gap-4 max-h-[90vh]">
                     <h1 className="text-2xl font-bold text-foreground">Car Finder</h1>
                     <input placeholder="Year" value={year} type="text" onChange={(e) => setYear(e.target.value)}
@@ -138,10 +147,10 @@ function Vehicles() {
                     <input placeholder="Model" value={model} type="text" onChange={(e) => setModel(e.target.value)}
                         className="px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
                     <div className="flex flex-row gap-3">
-                        <button type="button" className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-semibold cursor-pointer hover:opacity-90" onClick={carSearching}>Search</button>
-                        <button type="button" className="flex-1 py-3 rounded-lg border border-border text-foreground cursor-pointer hover:bg-secondary" onClick={() => setIsAdding(false)}>Close</button>
+                        <button type="button" disabled={isSearching} className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-semibold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" onClick={carSearching}>{isSearching ? "Searching..." : "Search"}</button>
+                        <button type="button" className="flex-1 py-3 rounded-lg border border-border text-foreground cursor-pointer hover:bg-secondary" onClick={() => { setIsAdding(false); setYear(""); setMake(""); setModel(""); setSearchResults([]) }}>Close</button>
                     </div>
-                    {searchResults.length > 0 && <div className="flex flex-col gap-2 overflow-y-auto">
+                    {searchResults.length > 0 && <div className="flex flex-col gap-2 overflow-y-auto min-h-0">
                         {searchResults.map(car => (
                             <div onClick={() => handleCarSelect(car)} key={car.id} className="bg-secondary hover:bg-secondary/70 rounded-lg p-3 cursor-pointer">
                                 <p className="text-base font-semibold text-foreground">{car.year} {car.make} {car.model}</p>
