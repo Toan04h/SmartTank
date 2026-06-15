@@ -30,7 +30,8 @@ async def build_dashboard(
     end_of_month = datetime(year, month, total_days, 23, 59, 59)
     
     trips = list(session.exec(
-        select(Trip). where(
+        select(Trip).where(
+            Trip.user_id==user.id,
             between(Trip.created_at, start_of_month, end_of_month)
         )
     ).all())
