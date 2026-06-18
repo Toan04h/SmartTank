@@ -3,6 +3,9 @@ import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
 import { Plus, Road, Dot, MoveRight, MapPin, Car } from "lucide-react"
 
+// TODO: Make icons smaller
+//       Delete trip option
+
 function Trips() {
     const [trips, setTrips] = useState([])
     const [vehicles, setVehicles] = useState([])
