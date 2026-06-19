@@ -18,13 +18,6 @@ async def get_current_user(
         user = session.get(User, uuid.UUID(user_id))
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
-        user_data = {
-            "id": user.id,
-            "email": user.email,
-            "hashed_password": user.hashed_password,
-            "full_name": user.full_name,
-            "created_at": user.created_at,
-            "updated_at": user.updated_at
-        }
+        session.expunge(user)
        
-    return User(**user_data)
+    return user
