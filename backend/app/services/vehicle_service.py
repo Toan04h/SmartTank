@@ -96,7 +96,7 @@ async def add_user_vehicle(
         model = vehicle_data.model,
         year = vehicle_data.year,
         mpg_override = vehicle_data.mpg_override,
-        is_default=False,
+        is_default=vehicle_data.is_default,
         created_at=datetime.utcnow()
     )
     

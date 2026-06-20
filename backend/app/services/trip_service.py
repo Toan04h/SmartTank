@@ -6,7 +6,7 @@ from app.models.vehicle_catalog import VehicleCatalog
 from app.models.trip import Trip
 from app.schemas.trip_log import TripCreate
 from app.services.fuel_service import get_fuel_price
-from app.services.calculation_service import calculate_trip_cost, haversince_distance
+from app.services.calculation_service import calculate_trip_cost, haversine_distance
 from typing import Optional
 
 def get_vehicle_mpg(vehicle: UserVehicle, session: Session) -> float:
@@ -63,7 +63,7 @@ async def create_trip(
         assert trip_data.start_lng is not None
         assert trip_data.end_lat is not None
         assert trip_data.end_lng is not None
-        trip_data.distance = haversince_distance(
+        trip_data.distance = haversine_distance(
             trip_data.start_lat,
             trip_data.start_lng,
             trip_data.end_lat,

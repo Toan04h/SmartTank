@@ -35,7 +35,7 @@ def calculate_trip_cost(
         "co2_kg": co2_kg
     }
 
-def haversince_distance(
+def haversine_distance(
     start_lat: float, start_lng: float,
     end_lat: float, end_lng: float
 ) -> float:
