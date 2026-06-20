@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { LogOut } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
 
@@ -6,6 +8,7 @@ import { toast } from "sonner"
 //       Fix changing password once API for users/password is added
 
 function Profile() {
+    const navigate = useNavigate()
     const [fullName, setFullName] = useState("")
     const [state, setState] = useState("")
     const [zipCode, setZipCode] = useState("")
@@ -79,6 +82,13 @@ function Profile() {
         setState(originalState)
     }
 
+    // Clears the user's session and sends them back to login
+    function handleLogout() {
+        localStorage.removeItem("token")
+        localStorage.removeItem("email")
+        navigate("/login")
+    }
+
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] overflow-x-hidden">
             {/* Cover banner */}
@@ -142,6 +152,10 @@ function Profile() {
                     <p className="text-base font-semibold text-primary">Password</p>
                     <p className="text-base text-muted-foreground">Changing password is not yet supported.</p>
                 </div>
+
+                <button type="button" onClick={handleLogout} className="flex items-center justify-center gap-2 py-3 rounded-lg border border-border text-foreground cursor-pointer hover:bg-secondary">
+                    <LogOut size={18} /> Logout
+                </button>
 
             </div>
         </div>

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react"
-import { Fuel } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Fuel, LogOut } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 
 function Dashboard() {
+    const navigate = useNavigate()
     const email = localStorage.getItem("email")
     const username = email?.split("@")[0]
     const [fuelPrice, setFuelPrice] = useState(0.0)
@@ -46,10 +48,20 @@ function Dashboard() {
         })
     }, [])
 
+    // Clears the user's session and sends them back to login
+    function handleLogout() {
+        localStorage.removeItem("token")
+        localStorage.removeItem("email")
+        navigate("/login")
+    }
+
     return (
         <div className="flex flex-col min-h-screen bg-background">
             {/* Intro Header */}
-            <div className="bg-primary px-6 pt-8 pb-6">
+            <div className="relative bg-primary px-6 pt-8 pb-6">
+                <button type="button" onClick={handleLogout} className="absolute top-1/2 -translate-y-1/2 right-6 flex items-center gap-1 px-4 py-2 rounded-full bg-white/20 hover:bg-white/40 cursor-pointer text-primary-foreground text-sm font-medium">
+                    <LogOut size={16} /> Logout
+                </button>
                 <p className="text-3xl font-bold text-primary-foreground">Welcome, {username}!</p>
                 <p className="text-base text-primary-foreground/70 mt-1">Here's your summary</p>
             </div>
