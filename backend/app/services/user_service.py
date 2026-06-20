@@ -2,7 +2,8 @@ import uuid
 from fastapi import HTTPException
 from sqlmodel import Session, select
 from app.models.user import User
-from app.schemas.auth import UserProfileUpdate
+from app.schemas.auth import UserProfileUpdate, PasswordChangeRequest
+from app.services.auth_service import verify_password, hash_password
 from typing import Optional
 from datetime import datetime
 
@@ -60,4 +61,23 @@ def update_user_profile(
     session.add(user)
     session.commit()
     session.refresh(user)
+    return user
+
+def change_password(
+    request: PasswordChangeRequest,
+    user: User,
+    session: Session
+) -> User:
+    if not verify_password(request.old_password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect password"
+        )
+        
+    user.hashed_password = hash_password(request.new_password)
+    
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
     return user
