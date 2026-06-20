@@ -18,15 +18,15 @@ class TripCreate(BaseModel):
     tag: Optional[str] = None
     notes: Optional[str] = None
     
-@model_validator(mode="after")
-def validate_trip_mode(self) -> "TripCreate":
-    has_gps = all([self.start_lat, self.start_long, self.end_lat, self.end_lng])
-    has_manual = self.distance is not None
-    if not has_gps and not has_manual:
-        raise ValueError(
-            "A trip must include either GPS coordinates or a manual distance"
-        )
-    return self   
+    @model_validator(mode="after")
+    def validate_trip_mode(self) -> "TripCreate":
+        has_gps = all([self.start_lat, self.start_lng, self.end_lat, self.end_lng])
+        has_manual = self.distance is not None
+        if not has_gps and not has_manual:
+            raise ValueError(
+                "A trip must include either GPS coordinates or a manual distance"
+            )
+        return self   
     
 class TripResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
