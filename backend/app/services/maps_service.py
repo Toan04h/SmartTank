@@ -1,6 +1,5 @@
 import httpx
 from app.core.config import settings
-from typing import Optional
 
 async def autocomplete_address(input: str) -> list[dict]:
     async with httpx.AsyncClient() as client:
@@ -17,9 +16,7 @@ async def autocomplete_address(input: str) -> list[dict]:
         )
         response.raise_for_status()
         data = response.json()
-        print(data)
 
-        
         return [
             {
                 "description": s["placePrediction"]["text"]["text"],
@@ -27,6 +24,7 @@ async def autocomplete_address(input: str) -> list[dict]:
             }
             for s in data.get("suggestions", [])
         ]
+        
         
 async def geocode_place(place_id: str) -> dict:  
     async with httpx.AsyncClient() as client: 
@@ -40,7 +38,6 @@ async def geocode_place(place_id: str) -> dict:
         
         response.raise_for_status()
         data = response.json()
-        print(data)
             
         return {
             "lat": data["location"]["latitude"],
