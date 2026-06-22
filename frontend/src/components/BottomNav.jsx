@@ -1,7 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Route, Car, User, Navigation } from 'lucide-react'
 
+// TODO: Fix the Navigation button being off-centered because of how it's designed
+//       (maybe plus button instead)
+
 function BottomNav() {
+
     const location = useLocation()
 
     return (
