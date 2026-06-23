@@ -44,3 +44,20 @@ async def geocode_place(place_id: str) -> dict:
             "lng": data["location"]["longitude"],
             "formatted_address": data["formattedAddress"]
         }
+        
+async def reverse_geocode(lat: float, lng: float) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            params={
+                "latlng": f"{lat},{lng}",
+                "key": settings.GOOGLE_SERVICES_API_KEY
+            }
+        )
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        return {
+            "formatted_address": data["results"][0]["formatted_address"]
+        }
