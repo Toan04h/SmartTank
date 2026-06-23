@@ -22,6 +22,7 @@ function LiveTrip() {
     const [destinationAddress, setDestinationAddress] = useState("")
     const [destinationCoords, setDestinationCoords] = useState(null) // { lat, lng }
     const [searchResults, setSearchResults] = useState([])
+    const [searchTarget, setSearchTarget] = useState(null) // "start" | "destination" - which input triggered the current search
 
     const [currentPosition, setCurrentPosition] = useState(null) // { lat, lng }
     const [path, setPath] = useState([]) // array of { lat, lng } collected while tracking
@@ -30,10 +31,12 @@ function LiveTrip() {
     const [distanceToDestination, setDistanceToDestination] = useState(null) // live distance to destination, for display while tracking
 
     const [isTracking, setIsTracking] = useState(false)
+    const [isStartingTrip, setIsStartingTrip] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const watchIdRef = useRef(null)
     const lastPointRef = useRef(null) // { lat, lng } of the most recent GPS point, used to measure each new segment's distance
     const closestDistanceRef = useRef(null) // closest distance-to-destination reached so far, used for stray detection
+    const debounceRef = useRef(null)
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -74,19 +77,61 @@ function LiveTrip() {
     }, [])
 
     // Search the start/destination address as the user types
-    // TODO: BLOCKED until backend GET /maps/autocomplete exists
     function handleAddressSearch(query) {
-        // TODO: debounce (~300-500ms), then fetch GET /maps/autocomplete?input=query
-        //       setSearchResults(data)
+        // Debouncing so API doesn't get fired every time user updates
+        clearTimeout(debounceRef.current)
+
+        if (!query) {
+            setSearchResults([])
+            return
+        }
+
+        debounceRef.current = setTimeout( () => {
+            fetch(`${API_BASE_URL}/maps/autocomplete?input=${encodeURIComponent(query)}`, {
+                method: "GET",
+                headers: {"Authorization": `Bearer ${localStorage.getItem("token")}`}
+            })
+            .then(res => {
+                if (res.ok) return res.json()
+                return null
+            })
+            .then(data => {
+                if (data) {
+                    setSearchResults(data)
+                } else {
+                    toast.error("Could not find address.")
+                    return
+                }
+            })
+        }, 300)
     }
 
     // Select a search result to lock in the start or destination coordinates
-    // TODO: BLOCKED until backend GET /maps/geocode exists
     function handleSelectAddress(placeId, isDestination) {
-        // TODO: fetch GET /maps/geocode?place_id=placeId
-        //       if isDestination: setDestinationCoords + setDestinationAddress
-        //       else: setStartCoords + setStartAddress
-        //       then setSearchResults([])
+        fetch(`${API_BASE_URL}/maps/geocode?place_id=${encodeURIComponent(placeId)}`, {
+            method: "GET",
+            headers: {"Authorization": `Bearer ${localStorage.getItem("token")}`}
+        })
+        .then(res => {
+            if (res.ok) return res.json()
+            return null
+        })
+        .then(data => {
+            if (data) {
+                if (isDestination) {
+                    setDestinationCoords({ lat: data.lat, lng: data.lng })
+                    setDestinationAddress(data.formatted_address)
+                } else {
+                    setStartCoords({ lat: data.lat, lng: data.lng })
+                    setStartAddress(data.formatted_address)
+                }
+                setSearchResults([])
+                setSearchTarget(null)
+            } else {
+                toast.error("Could not get address.")
+                return
+            }
+        })
     }
 
     // Haversine distance between two lat/lng points, in miles
@@ -115,59 +160,76 @@ function LiveTrip() {
 
     // Starts GPS tracking for the trip
     function handleStartTrip() {
+        // TODO: future Plan Mode - skip this fresh-position override and let the user's
+        //       manually selected start location stand, for trips being planned ahead of time
+        //       rather than tracked live
+        setIsStartingTrip(true)
 
-        // Validation handling
-        if (!vehicleId || !startCoords || !destinationCoords) {
-            toast.error("Please fill in all of the fields.")
-            return
-        }
+        navigator.geolocation.getCurrentPosition((position) => {
+            const freshStart = { lat: position.coords.latitude, lng: position.coords.longitude }
+            setStartCoords(freshStart)
+            setCurrentPosition(freshStart)
 
-        if (haversineMiles(startCoords.lat, startCoords.lng, destinationCoords.lat, destinationCoords.lng) > RADIUS_CAP_MILES) {
-            toast.error("Your destination is too far.")
-            return
-        }
-
-        // Begins watching GPS position, everything here runs on every position update
-        watchIdRef.current = navigator.geolocation.watchPosition((position) => {
-            const newPoint = { lat: position.coords.latitude, lng: position.coords.longitude }
-
-            setCurrentPosition(newPoint)
-
-            // Updates the distance traveled
-            if (lastPointRef.current) {
-                const segment = haversineMiles(lastPointRef.current.lat, lastPointRef.current.lng, newPoint.lat, newPoint.lng)
-                setDistance(prev => prev + segment)
-            }
-
-            // Stores the new point for the live route drawn on the map
-            lastPointRef.current = newPoint
-            setPath(prev => [...prev, newPoint])
-
-            // Calculates the approx distance left until the destination
-            const liveDistanceToDestination = haversineMiles(newPoint.lat, newPoint.lng, destinationCoords.lat, destinationCoords.lng)
-            setDistanceToDestination(liveDistanceToDestination)
-
-            // Checks if the user has arrived to their destination
-            if (liveDistanceToDestination <= ARRIVAL_THRESHOLD_MILES) {
-                handleStopTrip("arrived")
+            // Validation handling
+            if (!vehicleId || !destinationCoords) {
+                toast.error("Please fill in all of the fields.")
+                setIsStartingTrip(false)
                 return
             }
 
-            // Track the closest the user has gotten to the destination so far.
-            // Comparing against this (rather than the original starting distance) means
-            // a real detour that's heading back toward the destination doesn't immediately
-            // count as straying - only drifting further from your best progress does.
-            if (closestDistanceRef.current === null || liveDistanceToDestination < closestDistanceRef.current) {
-                closestDistanceRef.current = liveDistanceToDestination
-                setClosestDistanceToDestination(liveDistanceToDestination)
-            } else if (liveDistanceToDestination > closestDistanceRef.current + STRAY_BUFFER_MILES) {
-                handleStopTrip("strayed")
+            if (haversineMiles(freshStart.lat, freshStart.lng, destinationCoords.lat, destinationCoords.lng) > RADIUS_CAP_MILES) {
+                toast.error("Your destination is too far.")
+                setIsStartingTrip(false)
+                return
             }
-        }, (error) => {
-            toast.error("Lost GPS signal.")
-        })
 
-        setIsTracking(true)
+            // Begins watching GPS position, everything here runs on every position update
+            watchIdRef.current = navigator.geolocation.watchPosition((trackingPosition) => {
+                const newPoint = { lat: trackingPosition.coords.latitude, lng: trackingPosition.coords.longitude }
+
+                setCurrentPosition(newPoint)
+
+                // Updates the distance traveled
+                if (lastPointRef.current) {
+                    const segment = haversineMiles(lastPointRef.current.lat, lastPointRef.current.lng, newPoint.lat, newPoint.lng)
+                    setDistance(prev => prev + segment)
+                }
+
+                // Stores the new point for the live route drawn on the map
+                lastPointRef.current = newPoint
+                setPath(prev => [...prev, newPoint])
+
+                // Calculates the approx distance left until the destination
+                const liveDistanceToDestination = haversineMiles(newPoint.lat, newPoint.lng, destinationCoords.lat, destinationCoords.lng)
+                setDistanceToDestination(liveDistanceToDestination)
+
+                // Checks if the user has arrived to their destination
+                if (liveDistanceToDestination <= ARRIVAL_THRESHOLD_MILES) {
+                    handleStopTrip("arrived")
+                    return
+                }
+
+                // Track the closest the user has gotten to the destination so far.
+                // Comparing against this (rather than the original starting distance) means
+                // a real detour that's heading back toward the destination doesn't immediately
+                // count as straying - only drifting further from your best progress does.
+                if (closestDistanceRef.current === null || liveDistanceToDestination < closestDistanceRef.current) {
+                    closestDistanceRef.current = liveDistanceToDestination
+                    setClosestDistanceToDestination(liveDistanceToDestination)
+                } else if (liveDistanceToDestination > closestDistanceRef.current + STRAY_BUFFER_MILES) {
+                    handleStopTrip("strayed")
+                }
+            }, (error) => {
+                toast.error("Lost GPS signal.")
+            })
+
+            setIsTracking(true)
+            setIsStartingTrip(false)
+            toast.success("Trip started!")
+        }, (error) => {
+            toast.error("Could not get your current location.")
+            setIsStartingTrip(false)
+        })
     }
 
     // Stops tracking (manually, or automatically via arrival/straying) and submits the trip
@@ -264,25 +326,37 @@ function LiveTrip() {
                 ) : (
                     /* Floating Start location + Destination inputs */
                     <div className="absolute top-4 left-4 right-4 flex flex-col gap-2">
-                        {/* TODO: BLOCKED on backend /maps/autocomplete - search results dropdown goes below this input */}
-                        <div className="flex items-stretch border border-border rounded-lg overflow-hidden bg-background shadow-lg focus-within:ring-2 focus-within:ring-primary">
+                        {/* TODO: future Plan Mode - re-enable search on this field (onChange/onBlur + dropdown
+                            below, matching the Destination input) so users can plan a trip from a location
+                            other than where they currently are. For live tracking, start must always be
+                            the user's real position, so this stays read-only for now. */}
+                        <div className="flex items-stretch border border-border rounded-lg overflow-hidden bg-background shadow-lg">
                             <div className="px-2.5 bg-secondary border-r border-border flex items-center">
                                 <MapPin size={15} className="text-muted-foreground" />
                             </div>
-                            <input placeholder="Start location" value={startAddress} type="text"
-                                onChange={(e) => { setStartAddress(e.target.value); handleAddressSearch(e.target.value) }}
-                                className="flex-1 px-3 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                            <input placeholder="Start location" value={startAddress} type="text" readOnly
+                                className="flex-1 px-3 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none cursor-default" />
                         </div>
 
-                        {/* TODO: BLOCKED on backend /maps/autocomplete - search results dropdown goes below this input */}
                         <div className="flex items-stretch border border-border rounded-lg overflow-hidden bg-background shadow-lg focus-within:ring-2 focus-within:ring-primary">
                             <div className="px-2.5 bg-secondary border-r border-border flex items-center">
                                 <MapPin size={15} className="text-muted-foreground" />
                             </div>
                             <input placeholder="Destination" value={destinationAddress} type="text"
-                                onChange={(e) => { setDestinationAddress(e.target.value); handleAddressSearch(e.target.value) }}
+                                onChange={(e) => { setDestinationAddress(e.target.value); setSearchTarget("destination"); handleAddressSearch(e.target.value) }}
+                                onBlur={() => { setSearchTarget(null); setSearchResults([]) }}
                                 className="flex-1 px-3 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
                         </div>
+                        {searchTarget === "destination" && searchResults.length > 0 && (
+                            <div className="flex flex-col gap-1 bg-background rounded-lg shadow-lg overflow-hidden">
+                                {searchResults.map(result => (
+                                    <div key={result.place_id} onMouseDown={() => handleSelectAddress(result.place_id, true)}
+                                        className="px-3 py-2 text-sm text-foreground hover:bg-secondary cursor-pointer">
+                                        {result.description}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -294,9 +368,9 @@ function LiveTrip() {
                             {isSubmitting ? "Saving..." : "Stop Trip"}
                         </button>
                     ) : (
-                        <button type="button" onClick={handleStartTrip} disabled={!isLoaded || !vehicleId || !startCoords || !destinationCoords}
+                        <button type="button" onClick={handleStartTrip} disabled={!isLoaded || !vehicleId || !destinationCoords || isStartingTrip}
                             className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg cursor-pointer hover:opacity-90 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                            Start Trip
+                            {isStartingTrip ? "Starting..." : "Start Trip"}
                         </button>
                     )}
                 </div>
