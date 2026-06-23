@@ -189,7 +189,7 @@ function Vehicles() {
             {/* Vehicle Adding Modal */}
             {isAddingVehicle && 
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                <div className="flex flex-col bg-card rounded-xl w-full max-w-xl p-6 gap-4 max-h-[90vh]">
+                <div className="flex flex-col bg-card rounded-xl w-full max-w-xl p-6 gap-4 max-h-[90vh] overflow-hidden">
                     <h1 className="text-2xl font-bold text-foreground">Car Finder</h1>
                     <input placeholder="Year" value={year} type="text" onChange={(e) => setYear(e.target.value)}
                         className="px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
@@ -201,7 +201,7 @@ function Vehicles() {
                         <button type="button" disabled={isSearching} className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-semibold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" onClick={carSearching}>{isSearching ? "Searching..." : "Search"}</button>
                         <button type="button" className="flex-1 py-3 rounded-lg border border-border text-foreground cursor-pointer hover:bg-secondary" onClick={() => { setIsAddingVehicle(false); setYear(""); setMake(""); setModel(""); setSearchResults([]) }}>Close</button>
                     </div>
-                    {searchResults.length > 0 && <div className="flex flex-col gap-2 overflow-y-auto min-h-0 [-webkit-overflow-scrolling:touch]">
+                    {searchResults.length > 0 && <div className="flex-1 flex flex-col gap-2 overflow-y-auto min-h-0 [-webkit-overflow-scrolling:touch]">
                         {searchResults.map(car => (
                             <div onClick={() => handleCarSelect(car)} key={car.id} className="bg-secondary hover:bg-secondary/70 rounded-lg p-3 cursor-pointer">
                                 <p className="text-base font-semibold text-foreground">{car.year} {car.make} {car.model}</p>
