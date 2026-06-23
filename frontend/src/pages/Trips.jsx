@@ -93,7 +93,7 @@ function Trips() {
             {trips.length === 0 ? (
                 <p className="text-center py-6 text-gray-500">No trips yet... Add some!</p>
             ) : (
-            <div className="flex flex-col gap-3 py-4 pb-6 overflow-y-auto">
+            <div className="flex flex-col gap-3 py-4 pb-6 overflow-y-auto [-webkit-overflow-scrolling:touch]">
                 {[...trips].reverse().map(trip => {
                     const vehicle = vehicles.find(v => v.id === trip.vehicle_id)
                     return (

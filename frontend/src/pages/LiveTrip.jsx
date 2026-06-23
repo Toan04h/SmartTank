@@ -247,6 +247,11 @@ function LiveTrip() {
         })
         .then(res => {
             if (res.ok) return res.json()
+            if (res.status === 401) {
+                toast.error("Your session expired. Please log in again to save this trip.")
+            } else {
+                toast.error("Could not save your trip.")
+            }
             return null
         })
         .then(data => {
@@ -263,8 +268,6 @@ function LiveTrip() {
                 } else if (reason === "strayed") {
                     toast.warning("You have strayed too far and the trip was ended early.")
                 }
-            } else {
-                toast.error("Could not save your trip.")
             }
 
             setIsTracking(false)
@@ -335,7 +338,7 @@ function LiveTrip() {
                                 <MapPin size={15} className="text-muted-foreground" />
                             </div>
                             <input placeholder="Start location" value={startAddress} type="text" readOnly
-                                className="flex-1 px-3 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none cursor-default" />
+                                className="flex-1 px-3 py-2 text-base bg-background text-foreground placeholder:text-muted-foreground focus:outline-none cursor-default" />
                         </div>
 
                         <div className="flex items-stretch border border-border rounded-lg overflow-hidden bg-background shadow-lg focus-within:ring-2 focus-within:ring-primary">
@@ -345,7 +348,7 @@ function LiveTrip() {
                             <input placeholder="Destination" value={destinationAddress} type="text"
                                 onChange={(e) => { setDestinationAddress(e.target.value); setSearchTarget("destination"); handleAddressSearch(e.target.value) }}
                                 onBlur={() => { setSearchTarget(null); setSearchResults([]) }}
-                                className="flex-1 px-3 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                                className="flex-1 px-3 py-2 text-base bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
                         </div>
                         {searchTarget === "destination" && searchResults.length > 0 && (
                             <div className="flex flex-col gap-1 bg-background rounded-lg shadow-lg overflow-hidden">
