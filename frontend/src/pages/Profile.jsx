@@ -98,7 +98,7 @@ function Profile() {
                 <div className="absolute left-1/2 -translate-x-1/2 -bottom-10 w-20 h-20 rounded-full bg-secondary border-4 border-background" />
             </div>
 
-            <div className="flex flex-col gap-4 px-4 pt-10 pb-6 flex-1 overflow-y-auto">
+            <div className="flex flex-col gap-4 px-4 pt-10 pb-6 flex-1 overflow-y-auto [-webkit-overflow-scrolling:touch]">
 
                 {/* Name header */}
                 <div>

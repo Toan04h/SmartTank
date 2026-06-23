@@ -141,7 +141,7 @@ function Vehicles() {
             {vehicles.length === 0 ? (
                 <p className="text-center py-6 text-gray-500">No vehicles yet... Add some!</p>
             ) : (
-                <div className="flex flex-col gap-3 py-4 pb-6 flex-1 overflow-y-auto">
+                <div className="flex flex-col gap-3 py-4 pb-6 flex-1 overflow-y-auto [-webkit-overflow-scrolling:touch]">
                     {[...vehicles].sort((a, b) => b.is_default - a.is_default).map(car => (
                         <div key={car.id} className="relative bg-card border border-border rounded-xl p-4 mx-4">
                             {/* Top row: icon + title */}
@@ -201,7 +201,7 @@ function Vehicles() {
                         <button type="button" disabled={isSearching} className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-semibold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" onClick={carSearching}>{isSearching ? "Searching..." : "Search"}</button>
                         <button type="button" className="flex-1 py-3 rounded-lg border border-border text-foreground cursor-pointer hover:bg-secondary" onClick={() => { setIsAddingVehicle(false); setYear(""); setMake(""); setModel(""); setSearchResults([]) }}>Close</button>
                     </div>
-                    {searchResults.length > 0 && <div className="flex flex-col gap-2 overflow-y-auto min-h-0">
+                    {searchResults.length > 0 && <div className="flex flex-col gap-2 overflow-y-auto min-h-0 [-webkit-overflow-scrolling:touch]">
                         {searchResults.map(car => (
                             <div onClick={() => handleCarSelect(car)} key={car.id} className="bg-secondary hover:bg-secondary/70 rounded-lg p-3 cursor-pointer">
                                 <p className="text-base font-semibold text-foreground">{car.year} {car.make} {car.model}</p>
