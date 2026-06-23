@@ -61,15 +61,26 @@ function LiveTrip() {
 
     // Get user's current location on mount to prefill the start point
     useEffect(() => {
-        // TODO: BLOCKED until backend /maps/geocode (reverse) exists to prefill setStartAddress
-        //       with a readable address - could just show raw coordinates for now instead
         navigator.geolocation.getCurrentPosition((position) => {
             // position.coords.latitude and position.coords.longitude live here
             const latPos = position.coords.latitude
             const longPos = position.coords.longitude
-            
+
             setCurrentPosition( { lat: latPos, lng: longPos} )
             setStartCoords( { lat: latPos, lng: longPos} )
+
+            // Turns the raw coordinates into a readable address for display
+            fetch(`${API_BASE_URL}/maps/reverse-geocode?lat=${latPos}&lng=${longPos}`, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+            })
+            .then(res => {
+                if (res.ok) return res.json()
+                return null
+            })
+            .then(data => {
+                if (data) setStartAddress(data.formatted_address)
+            })
         }, (error) => {
             // runs if permission is denied or something fails
             toast.error("Could not get your location.")
