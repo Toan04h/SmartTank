@@ -59,6 +59,18 @@ function LiveTrip() {
         })
     }, [])
 
+    // Detects a trip that was left running and never cleanly stopped - most likely
+    // because the page got backgrounded (tab switch, app switch) and iOS reloaded
+    // the page from scratch, silently wiping all tracking state. The "liveTripActive"
+    // flag in localStorage survives a reload even though React state doesn't, so its
+    // presence here means the previous session never reached handleStopTrip.
+    useEffect(() => {
+        if (localStorage.getItem("liveTripActive")) {
+            localStorage.removeItem("liveTripActive")
+            toast.error("Your last trip was interrupted (likely by switching apps) and could not be saved.")
+        }
+    }, [])
+
     // Get user's current location on mount to prefill the start point
     useEffect(() => {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -234,6 +246,7 @@ function LiveTrip() {
                 toast.error("Lost GPS signal.")
             })
 
+            localStorage.setItem("liveTripActive", "true")
             setIsTracking(true)
             setIsStartingTrip(false)
             toast.success("Trip started!")
@@ -246,6 +259,7 @@ function LiveTrip() {
     // Stops tracking (manually, or automatically via arrival/straying) and submits the trip
     function handleStopTrip(reason) {
         navigator.geolocation.clearWatch(watchIdRef.current)
+        localStorage.removeItem("liveTripActive")
         setIsSubmitting(true)
 
         fetch(`${API_BASE_URL}/trips`, {
