@@ -37,6 +37,7 @@ function LiveTrip() {
     const lastPointRef = useRef(null) // { lat, lng } of the most recent GPS point, used to measure each new segment's distance
     const closestDistanceRef = useRef(null) // closest distance-to-destination reached so far, used for stray detection
     const debounceRef = useRef(null)
+    const wakeLockRef = useRef(null)
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -247,6 +248,12 @@ function LiveTrip() {
             })
 
             localStorage.setItem("liveTripActive", "true")
+
+            // Keeps the screen from auto-locking while actively tracking
+            navigator.wakeLock?.request("screen")
+                .then(lock => { wakeLockRef.current = lock })
+                .catch(() => {})
+
             setIsTracking(true)
             setIsStartingTrip(false)
             toast.success("Trip started!")
@@ -260,6 +267,10 @@ function LiveTrip() {
     function handleStopTrip(reason) {
         navigator.geolocation.clearWatch(watchIdRef.current)
         localStorage.removeItem("liveTripActive")
+
+        wakeLockRef.current?.release()
+        wakeLockRef.current = null
+
         setIsSubmitting(true)
 
         fetch(`${API_BASE_URL}/trips`, {
