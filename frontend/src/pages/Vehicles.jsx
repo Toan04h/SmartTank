@@ -13,15 +13,15 @@ import { toast } from "sonner"
 
 //       Make icons smaller to fit display better for mobile view (Done)
 //       Add set default car (Done)
-
-//       Add Edit modal (nickname, mpg override)
-//       BLOCKED: no PATCH /vehicles/{vehicle_id} endpoint exists - only
-//       PATCH /vehicles/{vehicle_id}/default is available
+//       Add Edit modal (nickname, mpg override) (Done)
 
 function Vehicles() {
     const [vehicles, setVehicles] = useState([])
     const [isAddingVehicle, setIsAddingVehicle] = useState(false)
-    const [isEditting, setIsEditting] = useState(false)
+    const [editingVehicle, setEditingVehicle] = useState(null) // the car object currently being edited, or null
+    const [editNickname, setEditNickname] = useState("")
+    const [editMpgOverride, setEditMpgOverride] = useState("")
+    const [isSavingEdit, setIsSavingEdit] = useState(false)
     const [make, setMake] = useState("")
     const [model, setModel] = useState("")
     const [year, setYear] = useState("")
@@ -127,6 +127,46 @@ function Vehicles() {
         })
     }
 
+    // Opens the edit bottom sheet, prefilled with the car's current nickname/mpg
+    function handleEditOpen(car) {
+        setEditingVehicle(car)
+        setEditNickname(car.nickname || "")
+        setEditMpgOverride(car.mpg_override != null ? String(car.mpg_override) : "")
+        setIsOpen(null)
+    }
+
+    // Saves the edited nickname/mpg override for a user's car
+    function handleEditSubmit(e) {
+        e.preventDefault()
+
+        setIsSavingEdit(true)
+
+        fetch(`${API_BASE_URL}/vehicles/${editingVehicle.id}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({
+                nickname: editNickname,
+                mpg_override: editMpgOverride ? parseFloat(editMpgOverride) : null
+            })
+        })
+        .then(res => {
+            if (res.ok) return res.json()
+            toast.error("Could not save changes.")
+            return null
+        })
+        .then(data => {
+            if (data) {
+                setVehicles(prev => prev.map(car => car.id === data.id ? data : car))
+                toast.success("Car updated!")
+                setEditingVehicle(null)
+            }
+            setIsSavingEdit(false)
+        })
+    }
+
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] overflow-x-hidden">
             {/* Header */}
@@ -157,10 +197,12 @@ function Vehicles() {
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-1.5">
-                                            <p className="text-[17px] font-bold text-foreground">{car.year} {car.make} {car.model}</p>
+                                            <p className="text-[17px] font-bold text-foreground">{car.nickname || `${car.year} ${car.make} ${car.model}`}</p>
                                             {car.is_default && <Star size={15} className="text-primary" fill="currentColor" />}
                                         </div>
-                                        <p className="text-sm text-muted-foreground mt-0.5">{car.year} · {mpg} mpg</p>
+                                        <p className="text-sm text-muted-foreground mt-0.5">
+                                            {car.nickname ? `${car.year} ${car.make} ${car.model} · ` : `${car.year} · `}{mpg} mpg
+                                        </p>
                                     </div>
                                 </div>
 
@@ -172,8 +214,7 @@ function Vehicles() {
                                     {(isOpen === car.id) && (
                                         <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg flex flex-col min-w-[140px] z-10 overflow-hidden">
                                             <button type="button" onClick={() => handleDefaultCar(car.id)} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-foreground">Set Default</button>
-                                            {/* TODO: Add Edit button functionality (i.e. nickname, mpg, co2) - kept as placeholder until PATCH endpoint exists */}
-                                            <button type="button" className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-foreground">Edit</button>
+                                            <button type="button" onClick={() => handleEditOpen(car)} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-foreground">Edit</button>
                                             <button type="button" onClick={() => handleDelete(car.id)} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-destructive">Delete</button>
                                         </div>
                                     )}
@@ -250,11 +291,36 @@ function Vehicles() {
                 </div>
             </div>}
 
-            {/* TODO: wait for backend to implement a PATCH for the edit feature */}
-            {/* Vehicle Editting Modal */}
-            {isEditting &&
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            {/* Vehicle Editing Modal - bottom sheet */}
+            {editingVehicle &&
+            <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+                <form onSubmit={handleEditSubmit} className="w-full max-w-xl bg-card rounded-t-[28px] p-6 pb-8 flex flex-col gap-4">
+                    <div className="w-11 h-1.5 rounded-full bg-border mx-auto" />
+                    <div>
+                        <h1 className="text-xl font-extrabold text-foreground">Edit car</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">{editingVehicle.year} {editingVehicle.make} {editingVehicle.model}</p>
+                    </div>
 
+                    <div>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Nickname</p>
+                        <input placeholder="My daily driver" value={editNickname} type="text" onChange={(e) => setEditNickname(e.target.value)}
+                            className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Combined MPG</p>
+                        <input placeholder="28" value={editMpgOverride} type="number" step="0.1" onChange={(e) => setEditMpgOverride(e.target.value)}
+                            className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                    </div>
+
+                    <div className="flex flex-row gap-3">
+                        <button type="button" onClick={() => setEditingVehicle(null)}
+                            className="flex-1 h-12 rounded-xl bg-secondary text-muted-foreground font-bold cursor-pointer">Cancel</button>
+                        <button type="submit" disabled={isSavingEdit}
+                            className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            {isSavingEdit ? "Saving..." : "Save"}
+                        </button>
+                    </div>
+                </form>
             </div>}
         </div>
     )
