@@ -1,12 +1,14 @@
 import { useEffect, useState, useRef } from "react"
 import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api"
-import { Car, MapPin } from "lucide-react"
+import { Car, Navigation, Square, LocateFixed, ChevronDown } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
+import { useTracking } from "../context/TrackingContext"
 
 const RADIUS_CAP_MILES = 50
 const STRAY_BUFFER_MILES = 2.5
 const ARRIVAL_THRESHOLD_MILES = 0.1
+const MIN_TRIP_DISTANCE_MILES = 0.02 // below this, treat as no real movement - discard locally, no API calls at all
 
 const mapContainerStyle = {
     width: "100%",
@@ -20,7 +22,7 @@ function LiveTrip() {
     const [startAddress, setStartAddress] = useState("")
     const [startCoords, setStartCoords] = useState(null) // { lat, lng }
     const [destinationAddress, setDestinationAddress] = useState("")
-    const [destinationCoords, setDestinationCoords] = useState(null) // { lat, lng }
+    const [destinationCoords, setDestinationCoords] = useState(null) // { lat, lng } - null means an open-ended, no-destination trip
     const [searchResults, setSearchResults] = useState([])
     const [searchTarget, setSearchTarget] = useState(null) // "start" | "destination" - which input triggered the current search
 
@@ -30,7 +32,7 @@ function LiveTrip() {
     const [closestDistanceToDestination, setClosestDistanceToDestination] = useState(null)
     const [distanceToDestination, setDistanceToDestination] = useState(null) // live distance to destination, for display while tracking
 
-    const [isTracking, setIsTracking] = useState(false)
+    const { isTracking, setIsTracking } = useTracking() // shared with BottomNav so it can hide itself while tracking
     const [isStartingTrip, setIsStartingTrip] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const watchIdRef = useRef(null)
@@ -38,6 +40,9 @@ function LiveTrip() {
     const closestDistanceRef = useRef(null) // closest distance-to-destination reached so far, used for stray detection
     const debounceRef = useRef(null)
     const wakeLockRef = useRef(null)
+    const mapRef = useRef(null) // underlying Google Map instance, used for the recenter button
+    const distanceRef = useRef(0) // mirrors `distance` so the watchPosition closure (created once at Start,
+    // never recreated) can read the live total instead of whatever it was frozen at when tracking began
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -183,7 +188,10 @@ function LiveTrip() {
     }
 
     // Starts GPS tracking for the trip
-    function handleStartTrip() {
+    // `freeRoam` is passed explicitly (rather than read from state) since the "Don't know?"
+    // pill sets destinationCoords to null and calls this in the same tick - reading a just-set
+    // state value here would still see the stale pre-update value due to React's batching
+    function handleStartTrip(freeRoam = false) {
         // TODO: future Plan Mode - skip this fresh-position override and let the user's
         //       manually selected start location stand, for trips being planned ahead of time
         //       rather than tracked live
@@ -195,13 +203,13 @@ function LiveTrip() {
             setCurrentPosition(freshStart)
 
             // Validation handling
-            if (!vehicleId || !destinationCoords) {
+            if (!vehicleId || (!destinationCoords && !freeRoam)) {
                 toast.error("Please fill in all of the fields.")
                 setIsStartingTrip(false)
                 return
             }
 
-            if (haversineMiles(freshStart.lat, freshStart.lng, destinationCoords.lat, destinationCoords.lng) > RADIUS_CAP_MILES) {
+            if (destinationCoords && haversineMiles(freshStart.lat, freshStart.lng, destinationCoords.lat, destinationCoords.lng) > RADIUS_CAP_MILES) {
                 toast.error("Your destination is too far.")
                 setIsStartingTrip(false)
                 return
@@ -213,15 +221,24 @@ function LiveTrip() {
 
                 setCurrentPosition(newPoint)
 
-                // Updates the distance traveled
+                // Updates the distance traveled - mirrored into a ref so a stale closure
+                // (like the arrival/stray checks below, captured once at Start) can still
+                // read the live total instead of whatever it was when tracking began
                 if (lastPointRef.current) {
                     const segment = haversineMiles(lastPointRef.current.lat, lastPointRef.current.lng, newPoint.lat, newPoint.lng)
-                    setDistance(prev => prev + segment)
+                    setDistance(prev => {
+                        const next = prev + segment
+                        distanceRef.current = next
+                        return next
+                    })
                 }
 
                 // Stores the new point for the live route drawn on the map
                 lastPointRef.current = newPoint
                 setPath(prev => [...prev, newPoint])
+
+                // Skip all destination-based logic entirely when free-roaming with no destination set
+                if (!destinationCoords) return
 
                 // Calculates the approx distance left until the destination
                 const liveDistanceToDestination = haversineMiles(newPoint.lat, newPoint.lng, destinationCoords.lat, destinationCoords.lng)
@@ -271,148 +288,242 @@ function LiveTrip() {
         wakeLockRef.current?.release()
         wakeLockRef.current = null
 
+        // Discard locally with no API calls at all if there was no real movement, so
+        // spamming Start/Stop in place can't run up reverse-geocode/trip-save requests
+        if (distanceRef.current < MIN_TRIP_DISTANCE_MILES) {
+            setPath([])
+            setDistance(0)
+            distanceRef.current = 0
+            setDistanceToDestination(null)
+            closestDistanceRef.current = null
+            setClosestDistanceToDestination(null)
+            setIsTracking(false)
+            toast.info("Trip discarded - no distance traveled.")
+            return
+        }
+
         setIsSubmitting(true)
 
-        fetch(`${API_BASE_URL}/trips`, {
-            method: "POST",
-            headers: {
-                "Content-Type" : "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
-            body: JSON.stringify({ vehicle_id: vehicleId, start_location: startAddress, distance: distance })
-        })
-        .then(res => {
-            if (res.ok) return res.json()
-            if (res.status === 401) {
-                toast.error("Your session expired. Please log in again to save this trip.")
-            } else {
-                toast.error("Could not save your trip.")
-            }
-            return null
-        })
-        .then(data => {
-            if (data) {
-                setPath([])
-                setDistance(0)
-                setDistanceToDestination(null)
-                closestDistanceRef.current = null
-                setClosestDistanceToDestination(null)
-                if (reason === "manual") {
-                    toast.success("You have stopped the trip.")
-                } else if (reason === "arrived") {
-                    toast.success("You have arrived at your destination.")
-                } else if (reason === "strayed") {
-                    toast.warning("You have strayed too far and the trip was ended early.")
-                }
-            }
+        // Use the ref, not the closured `currentPosition` state - same staleness risk as distance
+        const finalPosition = lastPointRef.current || currentPosition
 
-            setIsTracking(false)
-            setIsSubmitting(false)
-        })
+        const submitTrip = (endAddress) => {
+            fetch(`${API_BASE_URL}/trips`, {
+                method: "POST",
+                headers: {
+                    "Content-Type" : "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({
+                    vehicle_id: vehicleId,
+                    start_location: startAddress,
+                    end_location: endAddress,
+                    distance: distanceRef.current
+                })
+            })
+            .then(res => {
+                if (res.ok) return res.json()
+                if (res.status === 401) {
+                    toast.error("Your session expired. Please log in again to save this trip.")
+                } else {
+                    toast.error("Could not save your trip.")
+                }
+                return null
+            })
+            .then(data => {
+                if (data) {
+                    setPath([])
+                    setDistance(0)
+                    distanceRef.current = 0
+                    setDistanceToDestination(null)
+                    closestDistanceRef.current = null
+                    setClosestDistanceToDestination(null)
+                    if (reason === "manual") {
+                        toast.success("You have stopped the trip.")
+                    } else if (reason === "arrived") {
+                        toast.success("You have arrived at your destination.")
+                    } else if (reason === "strayed") {
+                        toast.warning("You have strayed too far and the trip was ended early.")
+                    }
+                }
+
+                setIsTracking(false)
+                setIsSubmitting(false)
+            })
+        }
+
+        // Captures wherever the trip actually ended as the end_location for the trip log
+        if (finalPosition) {
+            fetch(`${API_BASE_URL}/maps/reverse-geocode?lat=${finalPosition.lat}&lng=${finalPosition.lng}`, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+            })
+            .then(res => {
+                if (res.ok) return res.json()
+                return null
+            })
+            .then(data => {
+                submitTrip(data ? data.formatted_address : null)
+            })
+            .catch(() => submitTrip(null)) // never let a failed reverse-geocode block the actual trip save
+        } else {
+            submitTrip(null)
+        }
     }
 
+    // Pans the map back to the live position, since panning to follow the user
+    // isn't automatic once they've manually moved the map themselves
+    function handleRecenter() {
+        if (mapRef.current && currentPosition) {
+            mapRef.current.panTo(currentPosition)
+        }
+    }
+
+    const currentVehicle = vehicles.find(v => v.id === vehicleId)
+
+    // Straight-line preview distance, shown before tracking starts so the user can see
+    // roughly how far the trip is (and understand the radius cap) before committing
+    const previewDistance = (startCoords && destinationCoords)
+        ? haversineMiles(startCoords.lat, startCoords.lng, destinationCoords.lat, destinationCoords.lng)
+        : null
+
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-            {/* Header */}
-            <div className="flex flex-row justify-between items-center bg-primary px-6 pt-8 pb-6 shrink-0">
-                <p className="text-3xl font-bold text-primary-foreground">Live Trip</p>
-            </div>
+        <div className={`relative overflow-hidden ${isTracking ? "h-screen" : "h-[calc(100vh-4rem)]"}`}>
+            {/* Full-bleed map */}
+            {isLoaded ? (
+                <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={currentPosition || { lat: 0, lng: 0 }}
+                    zoom={14}
+                    onLoad={(map) => { mapRef.current = map }}
+                    options={{ disableDefaultUI: true }}
+                >
+                    {currentPosition && <Marker position={currentPosition} icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" />}
+                    {destinationCoords && <Marker position={destinationCoords} icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png" />}
+                    {path.length > 1 && <Polyline path={path} />}
+                </GoogleMap>
+            ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">Loading map...</div>
+            )}
 
-            {/* Vehicle selector */}
-            <div className="flex flex-col gap-3 px-4 py-4 shrink-0">
-                <div className="flex items-stretch border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary">
-                    <div className="px-3 bg-secondary border-r border-border flex items-center">
-                        <Car size={18} className="text-muted-foreground" />
+            {isTracking ? (
+                /* Live stats panel, shown in place of the vehicle/route cards while tracking */
+                <div className="absolute top-4 left-4 right-4 rounded-2xl bg-background shadow-lg px-4 py-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="w-2 h-2 rounded-full bg-primary" />
+                        <span className="text-xs font-bold text-primary uppercase tracking-wide">Tracking · {currentVehicle ? `${currentVehicle.year} ${currentVehicle.make} ${currentVehicle.model}` : "Vehicle"}</span>
                     </div>
-                    <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}
-                        className="flex-1 px-3 py-3 bg-background text-foreground focus:outline-none">
-                        <option value="">Select a vehicle</option>
-                        {vehicles.map(v => (
-                            <option key={v.id} value={v.id}>{v.year} {v.make} {v.model}</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Map */}
-            <div className="relative flex-1 px-4 pb-4">
-                {isLoaded ? (
-                    <GoogleMap
-                        mapContainerStyle={mapContainerStyle}
-                        center={currentPosition || { lat: 0, lng: 0 }}
-                        zoom={14}
-                    >
-                        {currentPosition && <Marker position={currentPosition} icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" />}
-                        {destinationCoords && <Marker position={destinationCoords} icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png" />}
-                        {path.length > 1 && <Polyline path={path} />}
-                    </GoogleMap>
-                ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">Loading map...</div>
-                )}
-
-                {isTracking ? (
-                    /* Live stats while tracking, shown in place of the address inputs */
-                    <div className="absolute top-4 left-4 right-4 flex gap-2">
-                        <div className="flex-1 rounded-lg bg-background shadow-lg px-3 py-2 text-center">
-                            <p className="text-xs text-muted-foreground">Distance Traveled</p>
-                            <p className="text-lg font-bold text-foreground">{distance.toFixed(1)} mi</p>
+                    <div className="flex">
+                        <div className="flex-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Traveled</p>
+                            <p className={destinationCoords ? "text-2xl font-extrabold text-foreground mt-1" : "text-[32px] font-extrabold text-primary mt-1 leading-none"}>
+                                {distance.toFixed(1)} <span className="text-sm text-muted-foreground font-semibold">mi</span>
+                            </p>
                         </div>
-                        <div className="flex-1 rounded-lg bg-background shadow-lg px-3 py-2 text-center">
-                            <p className="text-xs text-muted-foreground">To Destination</p>
-                            <p className="text-lg font-bold text-foreground">{distanceToDestination !== null ? `~${distanceToDestination.toFixed(1)} mi` : "—"}</p>
-                        </div>
-                    </div>
-                ) : (
-                    /* Floating Start location + Destination inputs */
-                    <div className="absolute top-4 left-4 right-4 flex flex-col gap-2">
-                        {/* TODO: future Plan Mode - re-enable search on this field (onChange/onBlur + dropdown
-                            below, matching the Destination input) so users can plan a trip from a location
-                            other than where they currently are. For live tracking, start must always be
-                            the user's real position, so this stays read-only for now. */}
-                        <div className="flex items-stretch border border-border rounded-lg overflow-hidden bg-background shadow-lg">
-                            <div className="px-2.5 bg-secondary border-r border-border flex items-center">
-                                <MapPin size={15} className="text-muted-foreground" />
-                            </div>
-                            <input placeholder="Start location" value={startAddress} type="text" readOnly
-                                className="flex-1 px-3 py-2 text-base bg-background text-foreground placeholder:text-muted-foreground focus:outline-none cursor-default" />
-                        </div>
-
-                        <div className="flex items-stretch border border-border rounded-lg overflow-hidden bg-background shadow-lg focus-within:ring-2 focus-within:ring-primary">
-                            <div className="px-2.5 bg-secondary border-r border-border flex items-center">
-                                <MapPin size={15} className="text-muted-foreground" />
-                            </div>
-                            <input placeholder="Destination" value={destinationAddress} type="text"
-                                onChange={(e) => { setDestinationAddress(e.target.value); setSearchTarget("destination"); handleAddressSearch(e.target.value) }}
-                                onBlur={() => { setSearchTarget(null); setSearchResults([]) }}
-                                className="flex-1 px-3 py-2 text-base bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
-                        </div>
-                        {searchTarget === "destination" && searchResults.length > 0 && (
-                            <div className="flex flex-col gap-1 bg-background rounded-lg shadow-lg overflow-hidden">
-                                {searchResults.map(result => (
-                                    <div key={result.place_id} onMouseDown={() => handleSelectAddress(result.place_id, true)}
-                                        className="px-3 py-2 text-sm text-foreground hover:bg-secondary cursor-pointer">
-                                        {result.description}
-                                    </div>
-                                ))}
-                            </div>
+                        {destinationCoords && (
+                            <>
+                                <div className="w-px bg-border" />
+                                <div className="flex-1 pl-4">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">To destination</p>
+                                    <p className="text-[32px] font-extrabold text-primary mt-1 leading-none">{distanceToDestination !== null ? `~${distanceToDestination.toFixed(1)}` : "—"} <span className="text-sm text-muted-foreground font-semibold">mi</span></p>
+                                </div>
+                            </>
                         )}
                     </div>
-                )}
+                </div>
+            ) : (
+                /* Floating vehicle selector + route card */
+                <div className="absolute top-4 left-4 right-4 flex flex-col gap-2">
+                    <div className="relative flex items-stretch rounded-2xl overflow-hidden bg-background shadow-lg">
+                        <div className="px-3 py-2.5 flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <Car size={16} className="text-primary" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Vehicle</p>
+                                <p className="text-sm font-bold text-foreground">{currentVehicle ? `${currentVehicle.year} ${currentVehicle.make} ${currentVehicle.model}` : "Select a vehicle"}</p>
+                            </div>
+                        </div>
+                        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <option value="">Select a vehicle</option>
+                            {vehicles.map(v => (
+                                <option key={v.id} value={v.id}>{v.year} {v.make} {v.model}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                {/* Floating Start/Stop Trip button */}
-                <div className="absolute bottom-8 left-8 right-8">
-                    {isTracking ? (
-                        <button type="button" onClick={() => handleStopTrip("manual")} disabled={isSubmitting}
-                            className="w-full py-4 rounded-lg bg-red-500 text-white font-semibold text-lg cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
-                            {isSubmitting ? "Saving..." : "Stop Trip"}
-                        </button>
-                    ) : (
-                        <button type="button" onClick={handleStartTrip} disabled={!isLoaded || !vehicleId || !destinationCoords || isStartingTrip}
-                            className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg cursor-pointer hover:opacity-90 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                            {isStartingTrip ? "Starting..." : "Start Trip"}
-                        </button>
+                    <div className="rounded-2xl overflow-hidden bg-background shadow-lg">
+                        {/* TODO: future Plan Mode - re-enable search on this field so users can plan
+                            a trip from a location other than where they currently are. For live
+                            tracking, start must always be the user's real position, so it stays
+                            read-only for now. */}
+                        <div className="flex items-center gap-3 px-3 py-3">
+                            <span className="w-2.5 h-2.5 rounded-full bg-foreground shrink-0" />
+                            <span className="text-sm font-semibold text-foreground truncate">{startAddress || "Current location"}</span>
+                        </div>
+                        <div className="h-px bg-border mx-3" />
+                        <div className="flex items-center gap-3 px-3 py-2.5">
+                            <span className="w-2.5 h-2.5 bg-primary shrink-0" />
+                            <input placeholder="Where to?" value={destinationAddress} type="text"
+                                onChange={(e) => { setDestinationAddress(e.target.value); setSearchTarget("destination"); handleAddressSearch(e.target.value) }}
+                                onBlur={() => { setSearchTarget(null); setSearchResults([]) }}
+                                className="flex-1 py-0 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground placeholder:font-medium focus:outline-none" />
+                            <button type="button" disabled={!isLoaded || !vehicleId || isStartingTrip}
+                                onClick={() => {
+                                    setDestinationCoords(null)
+                                    setDestinationAddress("")
+                                    setSearchResults([])
+                                    handleStartTrip(true)
+                                }}
+                                className="h-[30px] px-[13px] rounded-[9px] bg-primary/10 text-primary text-[13px] font-bold cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Don't know?
+                            </button>
+                        </div>
+                        {previewDistance !== null && (
+                            <>
+                                <div className="h-px bg-border mx-3" />
+                                <div className="px-3 py-2">
+                                    <span className="text-xs font-semibold text-muted-foreground">~{previewDistance.toFixed(1)} mi to destination</span>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    {searchTarget === "destination" && searchResults.length > 0 && (
+                        <div className="flex flex-col gap-1 bg-background rounded-2xl shadow-lg overflow-hidden">
+                            {searchResults.map(result => (
+                                <div key={result.place_id} onMouseDown={() => handleSelectAddress(result.place_id, true)}
+                                    className="px-3 py-2 text-sm text-foreground hover:bg-secondary cursor-pointer">
+                                    {result.description}
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
+            )}
+
+            {/* Recenter button */}
+            <button type="button" onClick={handleRecenter}
+                className="absolute right-4 bottom-[104px] w-[46px] h-[46px] rounded-2xl bg-background shadow-lg flex items-center justify-center cursor-pointer">
+                <LocateFixed size={20} className="text-primary" />
+            </button>
+
+            {/* Floating Start/Stop Trip button */}
+            <div className="absolute bottom-8 left-4 right-4">
+                {isTracking ? (
+                    <button type="button" onClick={() => handleStopTrip("manual")} disabled={isSubmitting}
+                        className="w-full h-[58px] rounded-2xl bg-foreground text-background flex items-center justify-center gap-2 font-bold text-base cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
+                        <Square size={16} fill="currentColor" />
+                        {isSubmitting ? "Saving..." : "Stop trip"}
+                    </button>
+                ) : (
+                    <button type="button" onClick={() => handleStartTrip(false)} disabled={!isLoaded || !vehicleId || !destinationCoords || isStartingTrip}
+                        className="w-full h-[58px] rounded-2xl bg-primary text-primary-foreground flex items-center justify-center gap-2 font-bold text-base cursor-pointer hover:opacity-90 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                        <Navigation size={16} fill="currentColor" />
+                        {isStartingTrip ? "Starting..." : "Start trip"}
+                    </button>
+                )}
             </div>
         </div>
     )
