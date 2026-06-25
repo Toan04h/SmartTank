@@ -1,18 +1,32 @@
 import httpx
 from app.core.config import settings
 
-async def autocomplete_address(input: str) -> list[dict]:
+async def autocomplete_address(
+    input: str,
+    lat: float | None = None,
+    lng: float | None = None
+) -> list[dict]:
     async with httpx.AsyncClient() as client:
+        json_body: dict={
+                "input": input,
+                "languageCode": "en"
+            }
+            
+        if lat is not None and lng is not None:
+            json_body["locationBias"] = {
+                "circle": {
+                    "center": {"latitude": lat, "longitude": lng},
+                    "radius": 50000.0  # 50km radius
+                }
+            }
+            
         response = await client.post(
             "https://places.googleapis.com/v1/places:autocomplete",
             headers={
                 "Content-Type": "application/json",
                 "X-Goog-Api-Key": settings.GOOGLE_SERVICES_API_KEY,
-            },
-            json={
-                "input": input,
-                "languageCode": "en"
-            }
+            },     
+            json=json_body
         )
         response.raise_for_status()
         data = response.json()
