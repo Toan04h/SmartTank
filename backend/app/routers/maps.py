@@ -14,17 +14,19 @@ router = APIRouter(
 async def autocomplete_address_endpoint(
     request: Request,
     input: str,
+    lat: float | None = None,
+    lng: float | None = None,
     user: User = Depends(get_current_user)
 ):
     try:
-        return await autocomplete_address(input)
+        return await autocomplete_address(input, lat, lng)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/geocode")
-@limiter.limit("30/minutes")
+@limiter.limit("30/minute")
 async def geocode_place_endpoint(
     request: Request,
     place_id: str,     
