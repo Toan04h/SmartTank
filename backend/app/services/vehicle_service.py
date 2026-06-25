@@ -7,7 +7,7 @@ from app.models.user import User
 from app.models.trip import Trip
 from app.models.vehicle_catalog import VehicleCatalog
 from app.models.user_vehicle import UserVehicle
-from app.schemas.vehicle import UserVehicleCreate, VehicleStats
+from app.schemas.vehicle import UserVehicleCreate, VehicleStats, UserVehicleUpdate
 
 async def build_vehicle_stat(
     vehicle_id: uuid.UUID,
@@ -124,6 +124,38 @@ def get_user_vehicles (
     return list(session.exec(
         select(UserVehicle).where(UserVehicle.user_id==user_id)
     ).all())
+    
+def update_user_vehicle(
+    vehicle_id: uuid.UUID,
+    user_id: uuid.UUID,
+    request: UserVehicleUpdate,
+    session: Session
+) -> UserVehicle:
+    vehicle = session.exec(
+        select(UserVehicle).where(
+            UserVehicle.id == vehicle_id,
+            UserVehicle.user_id == user_id
+        )
+    ).first()
+    
+    if vehicle is None:
+        raise HTTPException(
+            status_code=404, 
+            detail="vehicle not found or does not belong to you"
+        )
+        
+    if request.nickname is not None:
+        vehicle.nickname = request.nickname
+        
+    if request.mpg_override is not None: 
+        vehicle.mpg_override = request.mpg_override
+        
+    session.add(vehicle)
+    session.commit()
+    session.refresh(vehicle)
+    
+    return vehicle
+    
 
 def delete_user_vehicle(
     vehicle_id: uuid.UUID,

@@ -4,14 +4,15 @@ from sqlmodel import Session, select
 from app.schemas.vehicle import ( 
     UserVehicleCreate, UserVehicleResponse, 
     VehicleSearchRequest, VehicleSearchResponse,
-    AddVehicleRequest, VehicleStats
+    AddVehicleRequest, VehicleStats, UserVehicleUpdate
 )
 from app.schemas.comparison import (
     VehicleComparisonResult, CompareRequest
 )
 from app.services.vehicle_service import (
     search_vehicle_from_db, delete_user_vehicle, 
-    add_user_vehicle, get_user_vehicles,build_vehicle_stat
+    update_user_vehicle, add_user_vehicle, 
+    get_user_vehicles, build_vehicle_stat
 )
 from app.services.comparison_service import (
     compare_vehicle
@@ -72,6 +73,14 @@ async def add_vehicle(
                 status_code=404,
                 detail="Vehicle not found in catalog"
             )
+        
+        mpg = catalog.combined_mpg
+        
+        if catalog.combined_mpg_alt is not None: 
+            mpg = catalog.combined_mpg_alt
+            
+        if request.mpg_override is not None:
+            mpg =  request.mpg_override
             
         garage_data = UserVehicleCreate(
             catalog_id=request.catalog_id,
@@ -79,7 +88,7 @@ async def add_vehicle(
             make=catalog.make,
             model=catalog.model,
             year=catalog.year,
-            mpg_override=request.mpg_override,
+            mpg_override=mpg,
             is_default=request.is_default
         )
         
@@ -145,6 +154,15 @@ async def set_default_vehicle(
     session.refresh(new_default)
     
     return new_default    
+
+@router.patch("/{vehicle_id}", response_model=UserVehicleResponse)
+async def edit_vehicle(
+    request: UserVehicleUpdate,
+    vehicle_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    return update_user_vehicle(vehicle_id, user.id, request, session)
 
 @router.delete("/{vehicle_id}", status_code=204)
 async def delete_vehicle(

@@ -54,6 +54,10 @@ class UserVehicleCreate(BaseModel):
     mpg_override: Optional[float] = None
     is_default: bool = False
 
+class UserVehicleUpdate(BaseModel):
+    nickname: Optional[str] = None
+    mpg_override: Optional[float] = None
+
 class UserVehicleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
