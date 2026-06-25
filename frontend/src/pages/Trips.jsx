@@ -1,10 +1,9 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
-import { Plus, Road, Dot, MoveRight, MapPin, Car } from "lucide-react"
+import { Plus, MoveRight, MapPin, Car } from "lucide-react"
 
-// TODO: Make icons smaller
-//       Delete trip option
+// TODO: Delete trip option
 
 function Trips() {
     const [trips, setTrips] = useState([])
@@ -79,44 +78,53 @@ function Trips() {
         })
     }
 
+    const now = new Date()
+    const tripsThisMonth = trips.filter(trip => {
+        const d = new Date(trip.trip_date || trip.created_at)
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    }).length
+
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] overflow-x-hidden">
             {/* Header */}
-            <div className="flex flex-row justify-between items-center bg-primary px-6 pt-8 pb-6 shrink-0">
-                <p className="text-3xl font-bold text-primary-foreground">My Trips</p>
-                <button onClick={() => setIsAdding(true)} className="flex items-center gap-1 px-4 py-2 rounded-full bg-white/20 hover:bg-white/40 cursor-pointer text-primary-foreground text-base font-medium">
-                    <Plus size={20} /> Add
+            <div className="px-6 pt-8 pb-4 flex items-start justify-between shrink-0">
+                <div>
+                    <p className="text-[28px] font-extrabold text-primary tracking-tight">Trips</p>
+                    <p className="text-sm text-muted-foreground mt-1">{tripsThisMonth} trips this month</p>
+                </div>
+                <button type="button" onClick={() => setIsAdding(true)}
+                    className="flex items-center gap-1.5 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-bold cursor-pointer shadow-sm">
+                    <Plus size={16} /> Add
                 </button>
             </div>
 
             {/* Trips Display */}
             {trips.length === 0 ? (
-                <p className="text-center py-6 text-gray-500">No trips yet... Add some!</p>
+                <p className="text-center py-6 text-muted-foreground">No trips yet... Add some!</p>
             ) : (
-            <div className="flex flex-col gap-3 py-4 pb-6 overflow-y-auto [-webkit-overflow-scrolling:touch]">
+            <div className="flex flex-col gap-3 px-4 pb-6 overflow-y-auto [-webkit-overflow-scrolling:touch]">
                 {[...trips].reverse().map(trip => {
                     const vehicle = vehicles.find(v => v.id === trip.vehicle_id)
                     return (
-                    <div key={trip.id} className="relative bg-card border border-border rounded-xl p-4 mx-4">
+                    <div key={trip.id} className="relative bg-card rounded-2xl shadow-sm p-4">
                         {/* Cost badge */}
                         <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-lg text-sm font-bold text-white ${trip.trip_cost < 20 ? "bg-green-500" : trip.trip_cost < 40 ? "bg-yellow-500" : "bg-red-500"}`}>
                             ${trip.trip_cost.toFixed(2)}
                         </div>
 
-                        {/* Top row: icon + route + vehicle */}
-                        <div className="flex flex-row items-center gap-4">
-                            <div className="bg-secondary rounded-xl p-4">
-                                <Road size={40} className="text-primary" />
+                        <div className="pr-20 min-w-0">
+                            <div className="flex items-center gap-1.5 text-base font-bold text-foreground truncate">
+                                <span className="truncate">{trip.start_location || "Unknown"}</span>
+                                <MoveRight size={14} className="text-primary shrink-0" />
+                                <span className="truncate">{trip.end_location || "Unknown"}</span>
                             </div>
-                            <div className="pr-20 min-w-0 overflow-hidden">
-                                <div className="flex items-center gap-1 text-lg font-bold text-foreground truncate">{trip.start_location || "Unknown"} <MoveRight size={18} className="shrink-0" /> {trip.end_location || "Unknown"}</div>
-                                <div className="text-sm text-muted-foreground truncate">{vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "Unknown vehicle"}</div>
+                            <div className="flex items-center gap-1.5 mt-2 text-muted-foreground">
+                                <Car size={13} className="shrink-0" />
+                                <span className="text-xs font-semibold truncate">{vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "Unknown vehicle"}</span>
                             </div>
-                        </div>
-
-                        {/* Stats row */}
-                        <div className="flex flex-row gap-2 mt-3">
-                            <div className="flex items-center text-sm text-muted-foreground">{trip.distance.toFixed(1)} mi <Dot size={16} /> {trip.co2_kg.toFixed(1)} kg CO2 <Dot size={16} /> {new Date(trip.trip_date || trip.created_at).toLocaleDateString()}</div>
+                            <p className="text-xs text-muted-foreground/80 mt-2">
+                                {trip.distance.toFixed(1)} mi · {trip.co2_kg.toFixed(1)} kg CO2 · {new Date(trip.trip_date || trip.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            </p>
                         </div>
                     </div>
                     )
@@ -124,19 +132,23 @@ function Trips() {
             </div>
             )}
 
-            {/* Trip Adding Modal */}
+            {/* Trip Adding Modal - bottom sheet */}
             {isAdding &&
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-4 py-4 bg-background rounded-lg border border-border w-full max-w-xl">
-                    <h1 className="text-2xl font-bold text-foreground">Log a Trip</h1>
+            <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+                <form onSubmit={handleSubmit} className="w-full max-w-xl bg-card rounded-t-[28px] p-6 pb-8 flex flex-col gap-4">
+                    <div className="w-11 h-1.5 rounded-full bg-border mx-auto" />
+                    <div>
+                        <h1 className="text-xl font-extrabold text-foreground">Log a trip</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">Enter your trip details</p>
+                    </div>
 
                     {/* Vehicle Dropdown */}
-                    <div className="flex items-stretch border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary">
-                        <div className="px-3 bg-secondary border-r border-border flex items-center">
+                    <div className="flex items-stretch rounded-xl overflow-hidden bg-secondary">
+                        <div className="px-3 flex items-center">
                             <Car size={18} className="text-muted-foreground" />
                         </div>
                         <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}
-                            className="flex-1 px-3 py-3 bg-background text-foreground focus:outline-none">
+                            className="flex-1 px-3 py-3 bg-transparent text-foreground focus:outline-none">
                             <option value="">Select a vehicle</option>
                             {vehicles.map(v => (
                                 <option key={v.id} value={v.id}>{v.year} {v.make} {v.model}</option>
@@ -145,38 +157,38 @@ function Trips() {
                     </div>
 
                     {/* Start Location */}
-                    <div className="flex items-stretch border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary">
-                        <div className="px-3 bg-secondary border-r border-border flex items-center">
+                    <div className="flex items-stretch rounded-xl overflow-hidden bg-secondary">
+                        <div className="px-3 flex items-center">
                             <MapPin size={18} className="text-muted-foreground" />
                         </div>
                         <input placeholder="Start Location" value={startLocation} type="text" onChange={(e) => setStartLocation(e.target.value)}
-                            className="flex-1 px-3 py-3 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                            className="flex-1 px-3 py-3 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none" />
                     </div>
 
                     {/* End Location */}
-                    <div className="flex items-stretch border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary">
-                        <div className="px-3 bg-secondary border-r border-border flex items-center">
+                    <div className="flex items-stretch rounded-xl overflow-hidden bg-secondary">
+                        <div className="px-3 flex items-center">
                             <MapPin size={18} className="text-muted-foreground" />
                         </div>
                         <input placeholder="End Location" value={endLocation} type="text" onChange={(e) => setEndLocation(e.target.value)}
-                            className="flex-1 px-3 py-3 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                            className="flex-1 px-3 py-3 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none" />
                     </div>
 
                     {/* Distance */}
-                    <div className="flex items-stretch border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary">
+                    <div className="flex items-stretch rounded-xl overflow-hidden bg-secondary">
                         <input placeholder="0.0" value={distance} type="number" step="0.1" onChange={(e) => setDistance(e.target.value)}
-                            className="flex-1 px-3 py-3 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none" />
-                        <div className="px-3 bg-secondary border-l border-border flex items-center">
+                            className="flex-1 px-3 py-3 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                        <div className="px-3 flex items-center">
                             <span className="text-sm font-medium text-muted-foreground">mi</span>
                         </div>
                     </div>
 
                     {/* Submit & Close Button */}
-                    <div className="flex flex-row gap-3">
-                        <button type="submit" disabled={isSubmitting} className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-semibold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div className="flex flex-row gap-3 mt-1">
+                        <button type="button" onClick={() => setIsAdding(false)} className="flex-1 h-12 rounded-xl bg-secondary text-muted-foreground font-bold cursor-pointer">Cancel</button>
+                        <button type="submit" disabled={isSubmitting} className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                             {isSubmitting ? "Logging..." : "Log Trip"}
                         </button>
-                        <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-3 rounded-lg border border-border text-foreground cursor-pointer hover:bg-secondary">Cancel</button>
                     </div>
                 </form>
             </div>}
