@@ -1,13 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'Manrope', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,30 +49,30 @@
 }
 
 :root {
-    --background: oklch(0.98 0.005 255);
-    --foreground: oklch(0.15 0.03 255);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.15 0.03 255);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.15 0.03 255);
-    --primary: oklch(0.55 0.22 264);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.93 0.01 255);
-    --secondary-foreground: oklch(0.25 0.03 255);
-    --muted: oklch(0.93 0.01 255);
-    --muted-foreground: oklch(0.50 0.03 255);
-    --accent: oklch(0.93 0.01 255);
-    --accent-foreground: oklch(0.25 0.03 255);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.88 0.01 255);
-    --input: oklch(0.88 0.01 255);
-    --ring: oklch(0.55 0.22 264);
+    --background: #F6F7F9;
+    --foreground: #11151B;
+    --card: #FFFFFF;
+    --card-foreground: #11151B;
+    --popover: #FFFFFF;
+    --popover-foreground: #11151B;
+    --primary: #2767E5;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F3F4F6;
+    --secondary-foreground: #11151B;
+    --muted: #F3F4F6;
+    --muted-foreground: #8A909A;
+    --accent: #F3F4F6;
+    --accent-foreground: #11151B;
+    --destructive: #E0484D;
+    --border: #F0F1F3;
+    --input: #F0F1F3;
+    --ring: #2767E5;
     --chart-1: oklch(0.55 0.22 264);
     --chart-2: oklch(0.65 0.17 180);
     --chart-3: oklch(0.60 0.18 220);
     --chart-4: oklch(0.50 0.15 290);
     --chart-5: oklch(0.70 0.12 240);
-    --radius: 0.75rem;
+    --radius: 1.125rem;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.15 0.03 255);
     --sidebar-primary: oklch(0.55 0.22 264);

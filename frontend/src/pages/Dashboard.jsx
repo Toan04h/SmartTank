@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { Fuel, LogOut } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
+import { LogOut, MoveRight } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 
 function Dashboard() {
     const navigate = useNavigate()
     const email = localStorage.getItem("email")
     const username = email?.split("@")[0]
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
     const [fuelPrice, setFuelPrice] = useState(0.0)
     const [isFuelPriceLoading, setIsFuelPriceLoading] = useState(true)
     const [isTripsLoading, setIsTripsLoading] = useState(true)
@@ -55,99 +56,112 @@ function Dashboard() {
         navigate("/login")
     }
 
+    const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })
+
     return (
         <div className="flex flex-col min-h-screen bg-background">
-            {/* Intro Header */}
-            <div className="relative bg-primary px-6 pt-8 pb-6">
-                <button type="button" onClick={handleLogout} className="absolute top-1/2 -translate-y-1/2 right-6 flex items-center gap-1 px-4 py-2 rounded-full bg-white/20 hover:bg-white/40 cursor-pointer text-primary-foreground text-sm font-medium">
-                    <LogOut size={16} /> Logout
-                </button>
-                <p className="text-3xl font-bold text-primary-foreground">Welcome, {username}!</p>
-                <p className="text-base text-primary-foreground/70 mt-1">Here's your summary</p>
-            </div>
-
-            {/* Cards */}
-            <div className="flex flex-col gap-4 px-4 py-4">
-
-                {/* Fuel Price Card */}
-                <div className="bg-card rounded-xl shadow-sm border border-border p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Fuel size={18} className="text-primary" />
-                        <p className="text-sm font-medium text-muted-foreground">National Fuel Price</p>
-                    </div>
-                    {isFuelPriceLoading ? <div className="animate-pulse bg-secondary h-8 rounded" /> : <p className="text-3xl font-bold text-foreground">${fuelPrice.toFixed(2)}</p> }
-                    <p className="text-sm text-muted-foreground mt-1">per gallon · national average</p>
+            {/* Header */}
+            <div className="px-6 pt-8 pb-4 flex items-start justify-between">
+                <div>
+                    <p className="text-sm font-medium text-muted-foreground">{today}</p>
+                    <p className="text-[28px] font-extrabold text-primary tracking-tight mt-1">Hello, {username}</p>
                 </div>
-
-                {/* Monthly Tracking */}
-                <div className="bg-card rounded-xl shadow-sm border border-border p-4">
-                    <p className="text-sm font-semibold text-primary mb-3">This Month</p>
-                    {isTripsLoading ? (
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="animate-pulse bg-secondary rounded-lg h-16" />
-                            <div className="animate-pulse bg-secondary rounded-lg h-16" />
-                            <div className="animate-pulse bg-secondary rounded-lg h-16" />
-                            <div className="animate-pulse bg-secondary rounded-lg h-16" />
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">${dashboardStats.total_cost}</p>
-                                <p className="text-sm text-muted-foreground mt-1">Spent</p>
-                            </div>
-                            <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">{dashboardStats.total_trips}</p>
-                                <p className="text-sm text-muted-foreground mt-1">Trips</p>
-                            </div>
-                            <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">{dashboardStats.total_co2}</p>
-                                <p className="text-sm text-muted-foreground mt-1">CO2 (kg)</p>
-                            </div>
-                            <div className="bg-secondary rounded-lg p-3">
-                                <p className="text-3xl font-bold text-foreground">{dashboardStats.total_distance}</p>
-                                <p className="text-sm text-muted-foreground mt-1">Miles</p>
-                            </div>
+                <div className="relative">
+                    <button type="button" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                        className="w-[42px] h-[42px] rounded-full bg-card shadow-sm flex items-center justify-center font-bold text-foreground cursor-pointer">
+                        {username?.[0]?.toUpperCase()}
+                    </button>
+                    {isProfileMenuOpen && (
+                        <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg flex flex-col min-w-[140px] z-10 overflow-hidden">
+                            <button type="button" onClick={handleLogout}
+                                className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-destructive flex items-center gap-2">
+                                <LogOut size={14} /> Logout
+                            </button>
                         </div>
                     )}
                 </div>
+            </div>
 
-                {/* Recent Trips */}
-                <div className="bg-card rounded-xl shadow-sm border border-border p-4">
-                    <p className="text-sm font-semibold text-primary mb-3">Recent Trips</p>
+            <div className="flex flex-col gap-3 px-4 pb-4">
+
+                {/* Gas price card */}
+                <div className="bg-card rounded-2xl shadow-sm p-4">
+                    <p className="text-xs font-medium text-muted-foreground">National gas price</p>
+                    <div className="flex items-baseline gap-1 mt-1">
+                        {isFuelPriceLoading ? (
+                            <div className="animate-pulse bg-secondary h-7 w-20 rounded" />
+                        ) : (
+                            <>
+                                <span className="text-2xl font-extrabold text-foreground">${fuelPrice.toFixed(2)}</span>
+                                <span className="text-sm text-muted-foreground font-medium">/gal</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Stat grid */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-card rounded-2xl shadow-sm p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Trips</p>
+                        <p className="text-[34px] font-extrabold text-foreground tracking-tight mt-2">
+                            {isTripsLoading ? "—" : dashboardStats.total_trips}
+                        </p>
+                    </div>
+                    <div className="bg-card rounded-2xl shadow-sm p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Spent</p>
+                        <p className="text-[34px] font-extrabold text-foreground tracking-tight mt-2">
+                            {isTripsLoading ? "—" : `$${dashboardStats.total_cost}`}
+                        </p>
+                    </div>
+                    <div className="bg-card rounded-2xl shadow-sm p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">CO2</p>
+                        <p className="text-[34px] font-extrabold text-foreground tracking-tight mt-2">
+                            {isTripsLoading ? "—" : dashboardStats.total_co2}
+                            <span className="text-sm text-muted-foreground font-semibold"> kg</span>
+                        </p>
+                    </div>
+                    <div className="bg-card rounded-2xl shadow-sm p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Miles</p>
+                        <p className="text-[34px] font-extrabold text-foreground tracking-tight mt-2">
+                            {isTripsLoading ? "—" : dashboardStats.total_distance}
+                            <span className="text-sm text-muted-foreground font-semibold"> mi</span>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Recent trips */}
+                <div className="flex items-center justify-between mt-2 mb-1 px-1">
+                    <p className="text-[17px] font-bold text-foreground">Recent trips</p>
+                    <Link to="/trips" className="text-sm font-semibold text-primary">See all</Link>
+                </div>
+                <div className="bg-card rounded-2xl shadow-sm overflow-hidden">
                     {isTripsLoading ? (
-                        <div className="flex flex-col gap-3">
-                            <div className="animate-pulse bg-secondary rounded-lg h-16" />
-                            <div className="animate-pulse bg-secondary rounded-lg h-16" />
-                            <div className="animate-pulse bg-secondary rounded-lg h-16" />
+                        <div className="flex flex-col gap-3 p-4">
+                            <div className="animate-pulse bg-secondary rounded-lg h-14" />
+                            <div className="animate-pulse bg-secondary rounded-lg h-14" />
+                            <div className="animate-pulse bg-secondary rounded-lg h-14" />
                         </div>
                     ) : dashboardStats.recent_trips.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No trips logged yet.</p>
+                        <p className="text-sm text-muted-foreground p-4">No trips logged yet.</p>
                     ) : (
-                        <div className="flex flex-col gap-3">
-                            {dashboardStats.recent_trips.reverse().map(trip => (
-                                <div key={trip.id} className="bg-secondary rounded-lg p-3">
-                                    <div className="flex justify-between items-start">
-                                        <p className="text-base font-medium text-foreground">
-                                            {trip.start_location || "Unknown"} → {trip.end_location || "Unknown"}
-                                        </p>
-                                        <p className={`text-base font-bold ${trip.trip_cost < 20 ? "text-green-500" : trip.trip_cost < 40 ? "text-yellow-500" : "text-red-500"}`}>
-                                            ${trip.trip_cost.toFixed(2)}
-                                        </p>
-                                    </div>
-                                    <div className="flex justify-between mt-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            {trip.distance ? `${trip.distance.toFixed(1)} mi` : "—"}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {trip.co2_kg.toFixed(1)} kg CO2
+                        [...dashboardStats.recent_trips].reverse().map((trip, i) => (
+                            <div key={trip.id}>
+                                <div className="flex items-center justify-between px-4 py-3.5">
+                                    <div>
+                                        <div className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
+                                            <span>{trip.start_location || "Unknown"}</span>
+                                            <MoveRight size={13} className="text-primary" />
+                                            <span>{trip.end_location || "Unknown"}</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {trip.distance ? `${trip.distance.toFixed(1)} mi` : "—"} · {new Date(trip.trip_date || trip.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                                         </p>
                                     </div>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {new Date(trip.trip_date || trip.created_at).toLocaleDateString()}
-                                    </p>
+                                    <span className="text-[17px] font-extrabold text-foreground">${trip.trip_cost.toFixed(2)}</span>
                                 </div>
-                            ))}
-                        </div>
+                                {i < dashboardStats.recent_trips.length - 1 && <div className="h-px bg-border mx-4" />}
+                            </div>
+                        ))
                     )}
                 </div>
 
