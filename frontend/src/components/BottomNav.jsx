@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Route, Car, User, Navigation } from 'lucide-react'
+import { useTracking } from '../context/TrackingContext'
 
 // TODO: Fix the Navigation button being off-centered because of how it's designed
 //       (maybe plus button instead)
@@ -7,6 +8,9 @@ import { LayoutDashboard, Route, Car, User, Navigation } from 'lucide-react'
 function BottomNav() {
 
     const location = useLocation()
+    const { isTracking } = useTracking()
+
+    if (isTracking) return null
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center py-4">
