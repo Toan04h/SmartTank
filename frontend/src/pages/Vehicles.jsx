@@ -95,9 +95,10 @@ function Vehicles() {
                 toast.success("Successfully removed the car.")
                 setVehicles(prev => prev.filter(car => car.id !== carId))
             } else {
-                return null
+                toast.error("Could not remove the car. It may have trips logged against it.")
             }
         })
+        .catch(() => toast.error("Could not remove the car. It may have trips logged against it."))
     }
 
     // Handles setting user's default car
