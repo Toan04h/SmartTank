@@ -116,7 +116,13 @@ function LiveTrip() {
         }
 
         debounceRef.current = setTimeout( () => {
-            fetch(`${API_BASE_URL}/maps/autocomplete?input=${encodeURIComponent(query)}`, {
+            // Bias results toward the user's actual position, so searching "Walmart"
+            // surfaces the nearby one instead of one in a random city
+            const biasParams = currentPosition
+                ? `&lat=${currentPosition.lat}&lng=${currentPosition.lng}`
+                : ""
+
+            fetch(`${API_BASE_URL}/maps/autocomplete?input=${encodeURIComponent(query)}${biasParams}`, {
                 method: "GET",
                 headers: {"Authorization": `Bearer ${localStorage.getItem("token")}`}
             })
