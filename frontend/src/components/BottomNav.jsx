@@ -13,7 +13,7 @@ function BottomNav() {
     if (isTracking) return null
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-card flex items-center py-4">
+        <nav className="relative z-30 shrink-0 border-t border-border bg-card flex items-center pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <Link to="/" className={`flex-1 flex justify-center ${location.pathname === "/" ? "text-primary" : "text-muted-foreground"}`}>
                 <LayoutDashboard size={28} />
             </Link>
