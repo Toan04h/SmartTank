@@ -59,7 +59,7 @@ function Dashboard() {
     const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })
 
     return (
-        <div className="flex flex-col min-h-screen bg-background">
+        <div className="flex flex-col h-full overflow-y-auto [-webkit-overflow-scrolling:touch] bg-background">
             {/* Header */}
             <div className="px-6 pt-8 pb-4 flex items-start justify-between">
                 <div>

@@ -116,7 +116,7 @@ function Profile() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] overflow-x-hidden">
+        <div className="flex flex-col h-full overflow-x-hidden">
             {/* Cover banner */}
             <div className="relative bg-gradient-to-br from-primary to-[#4F8BFF] h-[168px] shrink-0">
                 {/* TODO: BLOCKED - no profile picture field on backend, this is purely visual.
