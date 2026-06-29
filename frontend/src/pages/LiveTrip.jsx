@@ -394,7 +394,7 @@ function LiveTrip() {
         : null
 
     return (
-        <div className={`relative overflow-hidden ${isTracking ? "h-screen" : "h-[calc(100vh-4rem)]"}`}>
+        <div className="relative overflow-hidden h-full">
             {/* Full-bleed map */}
             {isLoaded ? (
                 <GoogleMap

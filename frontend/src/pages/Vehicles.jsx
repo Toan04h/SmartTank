@@ -169,7 +169,7 @@ function Vehicles() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] overflow-x-hidden">
+        <div className="flex flex-col h-full overflow-x-hidden">
             {/* Header */}
             <div className="px-6 pt-8 pb-4 flex items-start justify-between shrink-0">
                 <div>
