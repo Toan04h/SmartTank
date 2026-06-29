@@ -227,7 +227,7 @@ function Profile() {
                 </div>
 
                 <button type="button" onClick={handleLogout}
-                    className="flex items-center justify-center gap-2 h-[50px] rounded-2xl bg-card border-[1.5px] border-[#F4D5D6] text-destructive font-bold cursor-pointer shadow-sm">
+                    className="w-full flex items-center justify-center gap-2 h-[50px] rounded-2xl bg-card border-[1.5px] border-[#F4D5D6] text-destructive font-bold cursor-pointer shadow-sm">
                     <LogOut size={18} /> Log out
                 </button>
 
