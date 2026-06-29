@@ -279,7 +279,7 @@ function Vehicles() {
                                         className={`flex items-center justify-between py-3.5 cursor-pointer ${i < searchResults.length - 1 ? "border-b border-muted-foreground/20" : ""}`}>
                                         <div>
                                             <p className="text-[15px] font-bold text-foreground">{car.year} {car.make} {car.model}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{car.description}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5"> {car.displacement}L {car.cylinders} Cylinders | {car.combined_mpg} MPG | {car.fuel_type} | {car.drive} | {car.description}  </p>
                                         </div>
                                         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                             <Plus size={16} className="text-primary" />
