@@ -27,6 +27,7 @@ function LiveTrip() {
     const [searchTarget, setSearchTarget] = useState(null) // "start" | "destination" - which input triggered the current search
 
     const [currentPosition, setCurrentPosition] = useState(null) // { lat, lng }
+    const [heading, setHeading] = useState(null) // degrees 0-360 from GPS, used to rotate the driving arrow
     const [path, setPath] = useState([]) // array of { lat, lng } collected while tracking
     const [distance, setDistance] = useState(0)
     const [closestDistanceToDestination, setClosestDistanceToDestination] = useState(null)
@@ -226,6 +227,7 @@ function LiveTrip() {
                 const newPoint = { lat: trackingPosition.coords.latitude, lng: trackingPosition.coords.longitude }
 
                 setCurrentPosition(newPoint)
+                if (trackingPosition.coords.heading != null) setHeading(trackingPosition.coords.heading)
 
                 // Updates the distance traveled - mirrored into a ref so a stale closure
                 // (like the arrival/stray checks below, captured once at Start) can still
@@ -404,7 +406,20 @@ function LiveTrip() {
                     onLoad={(map) => { mapRef.current = map }}
                     options={{ disableDefaultUI: true }}
                 >
-                    {currentPosition && <Marker position={currentPosition} icon="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" />}
+                    {currentPosition && (
+                        <Marker
+                            position={currentPosition}
+                            icon={isTracking ? {
+                                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                                scale: 6,
+                                fillColor: "#2563EB",
+                                fillOpacity: 1,
+                                strokeColor: "#ffffff",
+                                strokeWeight: 2,
+                                rotation: heading ?? 0,
+                            } : "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"}
+                        />
+                    )}
                     {destinationCoords && <Marker position={destinationCoords} icon="https://maps.google.com/mapfiles/ms/icons/red-dot.png" />}
                     {path.length > 1 && <Polyline path={path} />}
                 </GoogleMap>
