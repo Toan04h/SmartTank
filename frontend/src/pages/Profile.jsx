@@ -102,10 +102,39 @@ function Profile() {
         setShowConfirmPassword(false)
     }
 
-    // TODO: BLOCKED - no password change endpoint exists on backend
     function handleChangePassword(e) {
         e.preventDefault()
-        toast.error("Changing password is not yet supported.")
+
+        if (newPassword !== confirmPassword) {
+            toast.error("Passwords do not match.")
+            return
+        }
+
+        setIsSubmitting(true)
+
+        fetch(`${API_BASE_URL}/users/password`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({
+                old_password: currentPassword, new_password: newPassword
+            })
+        })
+        .then(res => {
+            if (res.ok) {
+                toast.success("Password changed successfully.")
+                handleCancelPasswordChange()
+            } else {
+                toast.error("Could not change password. Check your current password and try again.")
+            }
+            setIsSubmitting(false)
+        })
+        .catch(() => {
+            toast.error("Could not change password.")
+            setIsSubmitting(false)
+        })
     }
 
     // Clears the user's session and sends them back to login
@@ -215,7 +244,7 @@ function Profile() {
                             </div>
                             <div className="flex flex-row gap-3">
                                 <button type="button" onClick={handleCancelPasswordChange} className="flex-1 h-11 rounded-xl bg-secondary text-muted-foreground font-bold cursor-pointer">Cancel</button>
-                                <button type="submit" className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-bold cursor-pointer shadow-sm">Save</button>
+                                <button type="submit" disabled={isSubmitting} className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-bold cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">{isSubmitting ? "Saving..." : "Save"}</button>
                             </div>
                         </form>
                     ) : (
