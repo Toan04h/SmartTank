@@ -10,6 +10,7 @@ function Register() {
     const [confirmPassword, setConfirmPassword] = useState("")
     const [password, setPassword] = useState("")
     const [email, setEmail] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
 
     // Sends information to backend
@@ -26,6 +27,8 @@ function Register() {
             return
         }
 
+        setIsSubmitting(true)
+
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -41,6 +44,7 @@ function Register() {
             navigate("/login")
         } else {
             toast.error(data.detail)
+            setIsSubmitting(false)
         }
     }
 
@@ -100,9 +104,10 @@ function Register() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg cursor-pointer"
+                        disabled={isSubmitting}
+                        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Register
+                        {isSubmitting ? "Creating account..." : "Register"}
                     </button>
                     <div className="relative text-sm text-muted-foreground">
                         Already have an account? <Link to="/login" className="text-primary">Log in</Link>

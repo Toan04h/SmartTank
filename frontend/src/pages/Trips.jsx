@@ -3,8 +3,6 @@ import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
 import { Plus, MoveRight, MapPin, Car } from "lucide-react"
 
-// TODO: Delete trip option
-
 function Trips() {
     const [trips, setTrips] = useState([])
     const [vehicles, setVehicles] = useState([])
@@ -14,6 +12,7 @@ function Trips() {
     const [distance, setDistance] = useState("")
     const [isAdding, setIsAdding] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
 
     // Fetch user's garage
     useEffect(() => {
@@ -40,6 +39,7 @@ function Trips() {
         })
         .then(data => {
             setTrips(data)
+            setIsLoading(false)
         })
     }, [])
 
@@ -99,7 +99,13 @@ function Trips() {
             </div>
 
             {/* Trips Display */}
-            {trips.length === 0 ? (
+            {isLoading ? (
+                <div className="flex flex-col gap-3 px-4 pb-6">
+                    <div className="animate-pulse bg-card rounded-2xl h-[88px]" />
+                    <div className="animate-pulse bg-card rounded-2xl h-[88px]" />
+                    <div className="animate-pulse bg-card rounded-2xl h-[88px]" />
+                </div>
+            ) : trips.length === 0 ? (
                 <p className="text-center py-6 text-muted-foreground">No trips yet... Add some!</p>
             ) : (
             <div className="flex flex-col gap-3 px-4 pb-6 overflow-y-auto [-webkit-overflow-scrolling:touch]">

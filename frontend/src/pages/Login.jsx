@@ -8,11 +8,14 @@ function Login() {
     const [seePassword, setSeePassword] = useState(false)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
 
     // Sends information to backend
     const handleSubmit = async (e) => {
         e.preventDefault() // stop refresh
+
+        setIsSubmitting(true)
 
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
@@ -26,7 +29,7 @@ function Login() {
         // Redirect user to dashboard on success
         if (response.ok) {
             localStorage.setItem("token", data.access_token)
-            
+
             // Get's user's email to be displayed
             const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
                 method: "GET",
@@ -39,6 +42,7 @@ function Login() {
             navigate("/")
         } else {
             toast.error(data.detail)
+            setIsSubmitting(false)
         }
     }
 
@@ -78,9 +82,10 @@ function Login() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg cursor-pointer"
+                        disabled={isSubmitting}
+                        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Login
+                        {isSubmitting ? "Logging in..." : "Login"}
                     </button>
                     <div className="relative text-sm text-muted-foreground">
                         Don't have an account? <Link to="/register" className="text-primary">Sign up</Link>
