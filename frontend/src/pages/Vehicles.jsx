@@ -28,6 +28,7 @@ function Vehicles() {
     const [searchResults, setSearchResults] = useState([])
     const [isOpen, setIsOpen] = useState(null)
     const [isSearching, setIsSearching] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
 
     // Fetch users garage
     useEffect(() => {
@@ -40,6 +41,7 @@ function Vehicles() {
         })
         .then(data => {
             setVehicles(data)
+            setIsLoading(false)
         })
     }, [])
 
@@ -183,7 +185,12 @@ function Vehicles() {
             </div>
 
             {/* Vehicles Display */}
-            {vehicles.length === 0 ? (
+            {isLoading ? (
+                <div className="flex flex-col gap-3 px-4 pb-6">
+                    <div className="animate-pulse bg-card rounded-2xl h-[88px]" />
+                    <div className="animate-pulse bg-card rounded-2xl h-[88px]" />
+                </div>
+            ) : vehicles.length === 0 ? (
                 <p className="text-center py-6 text-muted-foreground">No vehicles yet... Add some!</p>
             ) : (
                 <div className="flex flex-col gap-3 px-4 pb-6 flex-1 overflow-y-auto [-webkit-overflow-scrolling:touch]">

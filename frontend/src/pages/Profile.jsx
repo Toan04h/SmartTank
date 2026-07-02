@@ -19,6 +19,7 @@ function Profile() {
     const [originalState, setOriginalState] = useState("")
     const [originalZipCode, setOriginalZipCode] = useState("")
 
+    const [isLoading, setIsLoading] = useState(true)
     const [isChangingPassword, setIsChangingPassword] = useState(false)
     const [currentPassword, setCurrentPassword] = useState("")
     const [newPassword, setNewPassword] = useState("")
@@ -40,6 +41,7 @@ function Profile() {
             setFullName(data.full_name || "")
             setState(data.state || "")
             setZipCode(data.zip_code || "")
+            setIsLoading(false)
         })
     }, [])
 
@@ -160,7 +162,10 @@ function Profile() {
 
                 {/* Name + email header */}
                 <div className="text-center mb-1">
-                    <p className="text-[22px] font-extrabold text-foreground">{fullName || "Your Name"}</p>
+                    {isLoading
+                        ? <div className="animate-pulse bg-card rounded-lg h-7 w-40 mx-auto" />
+                        : <p className="text-[22px] font-extrabold text-foreground">{fullName || "Your Name"}</p>
+                    }
                     <p className="text-sm text-muted-foreground mt-0.5">{email}</p>
                 </div>
 
@@ -188,6 +193,14 @@ function Profile() {
                                     {isSubmitting ? "Saving..." : "Save"}
                                 </button>
                             </div>
+                        </>
+                    ) : isLoading ? (
+                        <>
+                            <div className="animate-pulse bg-secondary rounded-lg h-8" />
+                            <div className="h-px bg-border" />
+                            <div className="animate-pulse bg-secondary rounded-lg h-8" />
+                            <div className="h-px bg-border" />
+                            <div className="animate-pulse bg-secondary rounded-lg h-8" />
                         </>
                     ) : (
                         <>
