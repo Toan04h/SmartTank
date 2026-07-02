@@ -7,6 +7,7 @@ function Dashboard() {
     const navigate = useNavigate()
     const email = localStorage.getItem("email")
     const username = email?.split("@")[0]
+    const [displayName, setDisplayName] = useState(username)
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
     const [fuelPrice, setFuelPrice] = useState(0.0)
     const [isFuelPriceLoading, setIsFuelPriceLoading] = useState(true)
@@ -33,6 +34,18 @@ function Dashboard() {
         .then(data => {
             if (data) setDashboardStats(data)
             setIsTripsLoading(false)
+        })
+    }, [])
+
+    // Fetch user's first name for the greeting
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/users/profile`, {
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+        })
+        .then(res => { if (res.ok) return res.json(); return null })
+        .then(data => {
+            const firstName = data?.full_name?.split(" ")[0]
+            if (firstName) setDisplayName(firstName)
         })
     }, [])
 
@@ -64,7 +77,7 @@ function Dashboard() {
             <div className="px-6 pt-8 pb-4 flex items-start justify-between">
                 <div>
                     <p className="text-sm font-medium text-muted-foreground">{today}</p>
-                    <p className="text-[28px] font-extrabold text-primary tracking-tight mt-1">Hello, {username}</p>
+                    <p className="text-[28px] font-extrabold text-primary tracking-tight mt-1">Hello, {displayName}</p>
                 </div>
                 <div className="relative">
                     <button type="button" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
