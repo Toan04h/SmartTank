@@ -4,6 +4,7 @@ from app.models.user import User # noqa: F401
 from app.models.vehicle_catalog import VehicleCatalog # noqa: F401
 from app.models.user_vehicle import UserVehicle # noqa: F401
 from app.models.trip import Trip # noqa: F401
+from app.models.refresh_token import RefreshToken # noqa: F401
 from typing import Generator
 
 engine = create_engine(
