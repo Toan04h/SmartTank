@@ -16,13 +16,14 @@ async def calculate_trip(
     current_user: User = Depends(get_current_user)
 ):
     try:
+        fuel_type = request.fuel_type or "Regular Gasoline"
         if request.fuel_price is None: 
-            price_data = await get_fuel_price()
+            price_data = await get_fuel_price(fuel_type)
             fuel_price = price_data["price_per_gallon"]
         else:
             fuel_price = request.fuel_price
             
-        data = calculate_trip_cost(request.distance, request.mpg, fuel_price)
+        data = calculate_trip_cost(request.distance, request.mpg, fuel_price, fuel_type)
         data["distance"] = request.distance
         return data
     except Exception as e:

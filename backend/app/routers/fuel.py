@@ -1,5 +1,8 @@
-from fastapi import APIRouter, HTTPException
+import asyncio
+from fastapi import APIRouter, HTTPException, Depends
+from app.models.user import User
 from app.services.fuel_service import get_fuel_price
+from app.core.dependencies import get_current_user
 
 router = APIRouter(
     prefix="/fuel",
@@ -7,10 +10,20 @@ router = APIRouter(
 )
 
 @router.get("/price")
-async def fuel_price_endpoint():
+async def fuel_price_endpoint(
+    current_user: User = Depends(get_current_user)
+):
     try:
-        data = await get_fuel_price()
-        return data
+        gas, diesel, electricity = await asyncio.gather(
+            get_fuel_price("Regular Gasoline"),
+            get_fuel_price("Diesel"),
+            get_fuel_price("Electricity")
+        )
+        return {
+            "gasoline": gas,
+            "diesel": diesel,
+            "electricity": electricity
+        }
     except HTTPException:
         raise
     except Exception as e:
