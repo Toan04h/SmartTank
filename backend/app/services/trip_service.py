@@ -9,18 +9,25 @@ from app.services.fuel_service import get_fuel_price
 from app.services.calculation_service import calculate_trip_cost, haversine_distance
 from typing import Optional
 
-def get_vehicle_mpg(vehicle: UserVehicle, session: Session) -> float:
-    """Gets MPG for a vehicle - uses override if set, otherwise catalog value."""
-    if vehicle.mpg_override is not None:
-        return vehicle.mpg_override
+def get_vehicle_mpg_and_fuel_type(vehicle: UserVehicle, session: Session) -> tuple[float, str]:
+    """
+    Resolves a vehicle's MPG and fuel type.
+    MPG uses the override if set, otherwise the catalog value.
+    Fuel type comes from the catalog, defaulting to gasoline when unknown.
+    """
+    catalog = None
     
-    if vehicle.catalog_id is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Vehicle has no MPG data - please set an MPG override"
-        )
+    if vehicle.catalog_id is not None:
+        catalog = session.get(VehicleCatalog, vehicle.catalog_id)
+    
+    if catalog is not None and catalog.fuel_type is not None:
+        fuel_type = catalog.fuel_type
+    else: 
+        fuel_type = "Regular Gasoline"
+    
+    if vehicle.mpg_override is not None:
+        return vehicle.mpg_override, fuel_type
         
-    catalog = session.get(VehicleCatalog, vehicle.catalog_id)
     if catalog is None:
         raise HTTPException(
             status_code=404,
@@ -33,7 +40,7 @@ def get_vehicle_mpg(vehicle: UserVehicle, session: Session) -> float:
             detail="No MPG data available for this vehicle - please set an MPG override"
         )
         
-    return catalog.combined_mpg
+    return catalog.combined_mpg, fuel_type
     
 async def create_trip(
     trip_data: TripCreate,
@@ -55,9 +62,9 @@ async def create_trip(
             detail="Vehicle not found or does not belong to you"
         )
      
-    mpg = get_vehicle_mpg(vehicle, session)
-    price_data = await get_fuel_price(state=user_state)
-    fuel_price = price_data["price_per_gallon"]
+    mpg, fuel_type = get_vehicle_mpg_and_fuel_type(vehicle, session)
+    price_data = await get_fuel_price(fuel_type, state=user_state)
+    fuel_price = price_data["price"]
     if trip_data.distance is None:
         assert trip_data.start_lat is not None
         assert trip_data.start_lng is not None
@@ -70,7 +77,7 @@ async def create_trip(
             trip_data.end_lng
         )
         
-    trip_calculation = calculate_trip_cost(trip_data.distance, mpg, fuel_price)
+    trip_calculation = calculate_trip_cost(trip_data.distance, mpg, fuel_price, fuel_type)
     
     trip = Trip(
         user_id=user_id,

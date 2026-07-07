@@ -1,12 +1,17 @@
 import math
 
-# Source: US EPA - burning 1 gallon of gasoline produces 8.887 kg of CO2
-CO2_KG_PER_GALLON = 8.887
+# CO2 emissions per gallon burned (US EPA)
+CO2_KG_PER_GALLON_GASOLINE = 8.887
+CO2_KG_PER_GALLON_DIESEL = 10.18
+
+# EPA MPGe conversion: 1 gallon of gasoline = 33.7 kWh of energy
+KWH_PER_GALLON_EQUIVALENT = 33.7
 
 def calculate_trip_cost(
     distance: float, 
     mpg: float, 
-    fuel_price: float
+    fuel_price: float,
+    fuel_type: str
     ) -> dict:
     """
     Calculates fuel cost and CO2 emissions for a trip.
@@ -26,8 +31,17 @@ def calculate_trip_cost(
     if fuel_price <= 0:
         raise ValueError("Fuel price must be greater than 0")
     gallons_used = round(distance / mpg, 2)
-    trip_cost = round(gallons_used * fuel_price, 2)
-    co2_kg = round(gallons_used * 8.887, 2)
+    
+    if fuel_type == "Electricity":
+        kwh_used = gallons_used * KWH_PER_GALLON_EQUIVALENT
+        trip_cost = round(kwh_used * fuel_price, 2)
+        co2_kg = 0.0
+    elif fuel_type == "Diesel":
+        trip_cost = round(gallons_used * fuel_price, 2)
+        co2_kg = round(gallons_used * CO2_KG_PER_GALLON_DIESEL, 2)
+    else:
+        trip_cost = round(gallons_used * fuel_price, 2)
+        co2_kg = round(gallons_used * CO2_KG_PER_GALLON_GASOLINE, 2)
     
     return {
         "gallons_used": gallons_used,

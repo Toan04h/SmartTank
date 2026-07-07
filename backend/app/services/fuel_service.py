@@ -21,26 +21,44 @@ STATE_TO_EIA = {
     "WI": "SWI", "WY": "SWY", "DC": "SDC"
 }
 
-async def get_fuel_price(state: Optional[str] = None) -> dict: 
+async def get_fuel_price(fuel_type: str, state: Optional[str] = None) -> dict: 
+    gasoline_types = {"Regular Gasoline", "Midgrade Gasoline", "Premium Gasoline"}
+
+    if fuel_type in gasoline_types:
+        price = await _get_petroleum_price("EPM0", state)
+        unit = "dollars per gallon"
+    elif fuel_type == "Diesel": 
+        price = await _get_petroleum_price("EPD2D", state)
+        unit = "dollars per gallon"
+    elif fuel_type == "Electricity":
+        price = await _get_electricity_price(state)
+        unit = "dollars per kWh"
+    else: 
+        price = await _get_petroleum_price("EPM0", state)
+        unit = "dollars per gallon"
+    
+    return {
+        "price": price,
+        "unit": unit,
+        "fuel_type": fuel_type
+    }
+    
+async def _get_petroleum_price(product_code:str, state: Optional[str] = None) -> float:
     """
     Fetch the lastest national average regular gasoline price from the EIA API.
     Returns price in dollars per gallon
     """
     url = f"{EIA_BASE_URL}/petroleum/pri/gnd/data/"
-    is_estimate = True
     area_code = "NUS"
-    notice = "Set your state in profile settings for more accurate local prices"
     
     if state and STATE_TO_EIA.get(state.upper()):
         area_code = STATE_TO_EIA[state.upper()]
-        is_estimate = False
-        notice = None
         
     params = {
         "api_key": settings.EIA_API_KEY,
         "frequency": "weekly",
         "data[0]": "value",
-        "facets[product][]": "EPM0",
+        "facets[product][]": product_code,
         "facets[duoarea][]": area_code,
         "sort[0][column]": "period",
         "sort[0][direction]": "desc",
@@ -54,8 +72,6 @@ async def get_fuel_price(state: Optional[str] = None) -> dict:
 
     if not data["response"]["data"]:
         area_code = "NUS"
-        is_estimate = True
-        notice = f"No state-level data available for {state} - using national average"
         
         params["facets[duoarea][]"] = "NUS"
         async with httpx.AsyncClient() as client:
@@ -64,12 +80,39 @@ async def get_fuel_price(state: Optional[str] = None) -> dict:
             data = response.json()
         
     latest = data["response"]["data"][0]
+    
+    return float(latest["value"])
+
+async def _get_electricity_price(state: Optional[str] = None) -> float: 
+    url = f"{EIA_BASE_URL}/electricity/retail-sales/data/"
+    area_code = "US"
+    
+    if state:
+        area_code = state.upper()
         
-    return {
-        "price_per_gallon": float(latest["value"]),
-        "period": latest["period"],
-        "unit": "dollars per gallon",
-        "area": f"{state} State Average" if not is_estimate else "National Average (US)",
-        "notice": notice
+    params = {
+        "api_key": settings.EIA_API_KEY,
+        "frequency": "monthly",
+        "data[0]": "price",
+        "facets[sectorid][]": "RES",
+        "facets[stateid][]": area_code,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "desc",
+        "length": 1,
     }
     
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+    if not data["response"]["data"]:
+        params["facets[stateid][]"] = "US"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+        
+    latest = data["response"]["data"][0]
+
+    return float(latest["price"])/100
