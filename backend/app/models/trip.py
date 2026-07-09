@@ -15,6 +15,8 @@ class Trip(SQLModel, table=True):
     start_location: Optional[str] = None
     end_location: Optional[str] = None 
     distance: Optional[float] = None
+    # Route image key
+    route_image_key: Optional[str] = None
     # GPS coordinates
     start_lat: Optional[float] = None
     end_lat: Optional[float] = None

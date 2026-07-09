@@ -14,6 +14,7 @@ class TripCreate(BaseModel):
     end_location: Optional[str] = None
     distance: Optional[float] = Field(default=None, gt=0, description="Distance in miles")
     vehicle_id: uuid.UUID
+    route_image_key: Optional[str] = None
     trip_date: Optional[datetime] = None
     tag: Optional[str] = None
     notes: Optional[str] = None
@@ -47,7 +48,11 @@ class TripResponse(BaseModel):
     fuel_price: float
     trip_cost: float
     co2_kg: float
+    route_image_key: Optional[str] = None
     trip_date: Optional[datetime] = None
     tag: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
+
+class TripImageUpdate(BaseModel):
+    object_key: str
