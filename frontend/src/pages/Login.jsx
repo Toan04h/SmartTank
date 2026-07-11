@@ -1,14 +1,18 @@
 import { useState } from "react"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, X } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
 import { toast } from 'sonner'
 import { API_BASE_URL } from "../api/config"
+
+const DEMO_EMAIL = "demo@gmail.com"
+const DEMO_PASSWORD = "demodemo"
 
 function Login() {
     const [seePassword, setSeePassword] = useState(false)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [showDemoBanner, setShowDemoBanner] = useState(true)
     const navigate = useNavigate()
 
     // Sends information to backend
@@ -53,6 +57,18 @@ function Login() {
                 <p className="text-base text-primary-foreground/70 mt-1">Log in to continue</p>
             </div>
             <div className="flex flex-col flex-1 justify-start pt-10 px-6">
+                {showDemoBanner && (
+                    <div className="flex items-start justify-between bg-card border border-border rounded-xl px-4 py-3 mb-5">
+                        <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Demo account</p>
+                            <p className="text-sm text-foreground"><span className="text-muted-foreground">Email:</span> {DEMO_EMAIL}</p>
+                            <p className="text-sm text-foreground"><span className="text-muted-foreground">Password:</span> {DEMO_PASSWORD}</p>
+                        </div>
+                        <button type="button" onClick={() => setShowDemoBanner(false)} className="text-muted-foreground hover:text-foreground cursor-pointer mt-0.5">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                     {/* Email Field */}
                     <input
