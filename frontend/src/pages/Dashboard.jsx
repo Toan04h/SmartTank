@@ -9,7 +9,7 @@ function Dashboard() {
     const username = email?.split("@")[0]
     const [displayName, setDisplayName] = useState(username)
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-    const [fuelPrice, setFuelPrice] = useState(0.0)
+    const [fuelPrices, setFuelPrices] = useState({ gasoline: null, diesel: null, electricity: null })
     const [isFuelPriceLoading, setIsFuelPriceLoading] = useState(true)
     const [isTripsLoading, setIsTripsLoading] = useState(true)
     const [dashboardStats, setDashboardStats] = useState({
@@ -51,13 +51,15 @@ function Dashboard() {
 
     // Fetch fuel prices
     useEffect(() => {
-        fetch(`${API_BASE_URL}/fuel/price`)
+        fetch(`${API_BASE_URL}/fuel/price`, {
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+        })
         .then(res => {
             if (res.ok) return res.json()
             return null
         })
         .then(data => {
-            if (data) setFuelPrice(data.price_per_gallon)
+            if (data) setFuelPrices({ gasoline: data.gasoline.price, diesel: data.diesel.price, electricity: data.electricity.price })
             setIsFuelPriceLoading(false)
         })
     }, [])
@@ -97,19 +99,37 @@ function Dashboard() {
 
             <div className="flex flex-col gap-3 px-4 pb-4">
 
-                {/* Gas price card */}
+                {/* Fuel price card */}
                 <div className="bg-card rounded-2xl shadow-sm p-4">
-                    <p className="text-xs font-medium text-muted-foreground">National gas price</p>
-                    <div className="flex items-baseline gap-1 mt-1">
-                        {isFuelPriceLoading ? (
+                    <p className="text-xs font-medium text-muted-foreground mb-2">National fuel prices</p>
+                    {isFuelPriceLoading ? (
+                        <div className="flex gap-4">
                             <div className="animate-pulse bg-secondary h-7 w-20 rounded" />
-                        ) : (
-                            <>
-                                <span className="text-2xl font-extrabold text-foreground">${fuelPrice.toFixed(2)}</span>
-                                <span className="text-sm text-muted-foreground font-medium">/gal</span>
-                            </>
-                        )}
-                    </div>
+                            <div className="animate-pulse bg-secondary h-7 w-20 rounded" />
+                            <div className="animate-pulse bg-secondary h-7 w-20 rounded" />
+                        </div>
+                    ) : (
+                        <div className="flex gap-4">
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Gas</p>
+                                <p className="text-xl font-extrabold text-foreground">
+                                    ${fuelPrices.gasoline?.toFixed(2)}<span className="text-xs text-muted-foreground font-medium">/gal</span>
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Diesel</p>
+                                <p className="text-xl font-extrabold text-foreground">
+                                    ${fuelPrices.diesel?.toFixed(2)}<span className="text-xs text-muted-foreground font-medium">/gal</span>
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Electric</p>
+                                <p className="text-xl font-extrabold text-foreground">
+                                    ${fuelPrices.electricity?.toFixed(3)}<span className="text-xs text-muted-foreground font-medium">/kWh</span>
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Stat grid */}
