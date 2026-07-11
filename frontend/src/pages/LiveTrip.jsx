@@ -4,6 +4,7 @@ import { Car, Navigation, Square, LocateFixed, ChevronDown } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
 import { useTracking } from "../context/TrackingContext"
+import polyline from "@mapbox/polyline"
 
 const RADIUS_CAP_MILES = 50
 const STRAY_BUFFER_MILES = 2.5
@@ -340,6 +341,38 @@ function LiveTrip() {
             })
             .then(data => {
                 if (data) {
+                    // Captures the route the user took
+                    const capturedPath = path
+                    if (capturedPath.length > 1) {
+                        const encodedPolyline = polyline.encode(capturedPath.map(p => [p.lat, p.lng]))
+                        const staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=600x400&path=enc:${encodedPolyline}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+
+                        ;(async () => {
+                            const imageBlob = await fetch(staticUrl).then(r => r.blob())
+
+                            const { upload_url, object_key } = await fetch(`${API_BASE_URL}/trips/${data.id}/image-upload-url`, {
+                                method: "POST",
+                                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                            }).then(r => r.json())
+
+                            await fetch(upload_url, {
+                                method: "PUT",
+                                body: imageBlob,
+                                headers: { "Content-Type": "image/png" }
+                            })
+
+                            await fetch(`${API_BASE_URL}/trips/${data.id}/image`, {
+                                method: "PATCH",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                                },
+                                body: JSON.stringify({ object_key })
+                            })
+                        })().catch(() => {})
+                    }
+
+                    // Empty the fields
                     setPath([])
                     setDistance(0)
                     distanceRef.current = 0
@@ -360,7 +393,13 @@ function LiveTrip() {
             })
         }
 
-        // Captures wherever the trip actually ended as the end_location for the trip log
+        // When arrived, the destination address is already known — no need to reverse-geocode
+        if (reason === "arrived") {
+            submitTrip(destinationAddress || null)
+            return
+        }
+
+        // For manual stop or straying, reverse-geocode wherever the trip actually ended
         if (finalPosition) {
             fetch(`${API_BASE_URL}/maps/reverse-geocode?lat=${finalPosition.lat}&lng=${finalPosition.lng}`, {
                 method: "GET",
