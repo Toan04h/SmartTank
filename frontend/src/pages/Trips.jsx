@@ -163,70 +163,102 @@ function Trips() {
 
                     {isDetailLoading ? (
                         <>
-                            <div className="flex items-start justify-between">
-                                <div className="animate-pulse bg-secondary h-5 w-16 rounded" />
-                                <div className="animate-pulse bg-secondary h-5 w-24 rounded" />
+                            <div className="animate-pulse bg-secondary h-6 w-48 rounded" />
+                            <div className="animate-pulse bg-secondary h-4 w-28 rounded" />
+                            <div className="animate-pulse bg-secondary w-full h-40 rounded-xl" />
+                            <div className="animate-pulse bg-secondary rounded-xl h-24" />
+                            <div className="grid grid-cols-3 gap-2.5">
+                                {[...Array(6)].map((_, i) => <div key={i} className="animate-pulse bg-secondary rounded-xl h-16" />)}
                             </div>
-                            <div className="animate-pulse bg-secondary w-full h-36 rounded-xl" />
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="animate-pulse bg-secondary rounded-xl h-16" />
-                                <div className="animate-pulse bg-secondary rounded-xl h-16" />
-                                <div className="animate-pulse bg-secondary rounded-xl h-16" />
-                                <div className="animate-pulse bg-secondary rounded-xl h-16" />
-                            </div>
-                            <div className="animate-pulse bg-secondary rounded-xl h-16" />
                         </>
                     ) : (
                         <>
                             {/* Header */}
                             <div className="flex items-start justify-between">
-                                <p className="text-base font-bold text-foreground">Route</p>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-right">
-                                        <p className="text-xs font-semibold text-foreground">
-                                            {new Date(selectedTrip.trip_date || selectedTrip.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                        </p>
-                                        {selectedTrip.start_time && selectedTrip.end_time && (
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                {new Date(selectedTrip.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} → {new Date(selectedTrip.end_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <button type="button" onClick={() => setIsDetailOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
-                                        <X size={18} />
-                                    </button>
+                                <div>
+                                    <p className="text-[19px] font-extrabold text-foreground">Trip Details</p>
+                                    {(() => {
+                                        const vehicle = vehicles.find(v => v.id === selectedTrip.vehicle_id)
+                                        return vehicle ? <p className="text-sm text-muted-foreground mt-0.5">{vehicle.year} {vehicle.make} {vehicle.model}</p> : null
+                                    })()}
                                 </div>
+                                <button type="button" onClick={() => setIsDetailOpen(false)}
+                                    className="w-[30px] h-[30px] rounded-[9px] bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer shrink-0 ml-3">
+                                    <X size={14} />
+                                </button>
                             </div>
 
                             {/* Route image */}
                             {selectedTrip.image_url
-                                ? <img src={selectedTrip.image_url} className="w-full rounded-xl" />
-                                : <div className="w-full h-36 rounded-xl bg-secondary flex items-center justify-center text-xs text-muted-foreground">No route image</div>
+                                ? <img src={selectedTrip.image_url} className="w-full h-40 object-cover rounded-xl" />
+                                : <div className="w-full h-40 rounded-xl bg-secondary flex items-center justify-center text-xs text-muted-foreground">No route image</div>
                             }
 
+                            {/* Locations + times */}
+                            <div className="bg-secondary rounded-xl px-3.5 py-1">
+                                <div className="flex items-center justify-between py-3 border-b border-border">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-foreground shrink-0" />
+                                        <span className="text-sm font-semibold text-foreground">{(selectedTrip.start_location || "Unknown").replace(/,\s*(USA|United States)$/i, "")}</span>
+                                    </div>
+                                    {selectedTrip.start_time && (
+                                        <span className="text-xs font-semibold text-muted-foreground shrink-0 ml-2">
+                                            {new Date(selectedTrip.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-between py-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="w-2.5 h-2.5 bg-primary shrink-0" />
+                                        <span className="text-sm font-semibold text-foreground">{(selectedTrip.end_location || "Unknown").replace(/,\s*(USA|United States)$/i, "")}</span>
+                                    </div>
+                                    {selectedTrip.end_time && (
+                                        <span className="text-xs font-semibold text-muted-foreground shrink-0 ml-2">
+                                            {new Date(selectedTrip.end_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <p className="text-xs font-medium text-muted-foreground -mt-2">
+                                {new Date(selectedTrip.trip_date || selectedTrip.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                            </p>
+
                             {/* Stats grid */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-secondary rounded-xl p-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cost</p>
-                                    <p className="text-lg font-extrabold text-foreground mt-0.5">${selectedTrip.trip_cost?.toFixed(2)}</p>
-                                </div>
-                                <div className="bg-secondary rounded-xl p-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Gallons used</p>
-                                    <p className="text-lg font-extrabold text-foreground mt-0.5">{selectedTrip.gallons_used?.toFixed(2)} gal</p>
-                                </div>
-                                <div className="bg-secondary rounded-xl p-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Distance</p>
-                                    <p className="text-lg font-extrabold text-foreground mt-0.5">{selectedTrip.distance?.toFixed(1)} mi</p>
-                                </div>
-                                <div className="bg-secondary rounded-xl p-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">CO2</p>
-                                    <p className="text-lg font-extrabold text-foreground mt-0.5">{selectedTrip.co2_kg?.toFixed(1)} kg</p>
-                                </div>
-                            </div>
-                            <div className="bg-secondary rounded-xl p-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Fuel price</p>
-                                <p className="text-lg font-extrabold text-foreground mt-0.5">${selectedTrip.fuel_price?.toFixed(2)}/gal</p>
-                            </div>
+                            {(() => {
+                                const hasDuration = selectedTrip.start_time && selectedTrip.end_time
+                                const mins = hasDuration ? Math.round((new Date(selectedTrip.end_time) - new Date(selectedTrip.start_time)) / 60000) : null
+                                const durationDisplay = mins !== null ? (mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`) : null
+                                return (
+                                    <div className="grid grid-cols-3 gap-2.5">
+                                        <div className="bg-secondary rounded-xl p-3">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cost</p>
+                                            <p className="text-lg font-extrabold text-foreground mt-1">${selectedTrip.trip_cost?.toFixed(2)}</p>
+                                        </div>
+                                        <div className="bg-secondary rounded-xl p-3">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Distance</p>
+                                            <p className="text-lg font-extrabold text-foreground mt-1">{selectedTrip.distance?.toFixed(1)}<span className="text-xs text-muted-foreground font-semibold"> mi</span></p>
+                                        </div>
+                                        <div className="bg-secondary rounded-xl p-3">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">CO₂</p>
+                                            <p className="text-lg font-extrabold text-foreground mt-1">{selectedTrip.co2_kg?.toFixed(1)}<span className="text-xs text-muted-foreground font-semibold"> kg</span></p>
+                                        </div>
+                                        <div className="bg-secondary rounded-xl p-3">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Fuel used</p>
+                                            <p className="text-lg font-extrabold text-foreground mt-1">{selectedTrip.gallons_used?.toFixed(2)}<span className="text-xs text-muted-foreground font-semibold"> gal</span></p>
+                                        </div>
+                                        <div className="bg-secondary rounded-xl p-3">
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Fuel price</p>
+                                            <p className="text-lg font-extrabold text-foreground mt-1">${selectedTrip.fuel_price?.toFixed(2)}</p>
+                                        </div>
+                                        {durationDisplay && (
+                                            <div className="bg-secondary rounded-xl p-3">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Duration</p>
+                                                <p className="text-lg font-extrabold text-foreground mt-1">{durationDisplay}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })()}
                         </>
                     )}
                 </div>

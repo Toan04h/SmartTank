@@ -33,11 +33,13 @@ function LiveTrip() {
     const [distance, setDistance] = useState(0)
     const [closestDistanceToDestination, setClosestDistanceToDestination] = useState(null)
     const [distanceToDestination, setDistanceToDestination] = useState(null) // live distance to destination, for display while tracking
+    const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
     const { isTracking, setIsTracking } = useTracking() // shared with BottomNav so it can hide itself while tracking
     const [isStartingTrip, setIsStartingTrip] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const watchIdRef = useRef(null)
+    const startTimeRef = useRef(null) // ISO timestamp captured when tracking begins
     const lastPointRef = useRef(null) // { lat, lng } of the most recent GPS point, used to measure each new segment's distance
     const closestDistanceRef = useRef(null) // closest distance-to-destination reached so far, used for stray detection
     const debounceRef = useRef(null)
@@ -171,6 +173,16 @@ function LiveTrip() {
         })
     }
 
+    // Elapsed timer — starts/resets with tracking state
+    useEffect(() => {
+        if (!isTracking) {
+            setElapsedSeconds(0)
+            return
+        }
+        const id = setInterval(() => setElapsedSeconds(s => s + 1), 1000)
+        return () => clearInterval(id)
+    }, [isTracking])
+
     // Haversine distance between two lat/lng points, in miles
     function haversineMiles(lat1, lng1, lat2, lng2) {
         // Distance vars
@@ -273,6 +285,7 @@ function LiveTrip() {
                 toast.error("Lost GPS signal.")
             })
 
+            startTimeRef.current = new Date().toISOString()
             localStorage.setItem("liveTripActive", "true")
 
             // Keeps the screen from auto-locking while actively tracking
@@ -327,7 +340,9 @@ function LiveTrip() {
                     vehicle_id: vehicleId,
                     start_location: startAddress,
                     end_location: endAddress,
-                    distance: distanceRef.current
+                    distance: distanceRef.current,
+                    start_time: startTimeRef.current,
+                    end_time: new Date().toISOString()
                 })
             })
             .then(res => {
@@ -478,6 +493,9 @@ function LiveTrip() {
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Traveled</p>
                             <p className={destinationCoords ? "text-2xl font-extrabold text-foreground mt-1" : "text-[32px] font-extrabold text-primary mt-1 leading-none"}>
                                 {distance.toFixed(1)} <span className="text-sm text-muted-foreground font-semibold">mi</span>
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                                Duration · {String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")}:{String(elapsedSeconds % 60).padStart(2, "0")}
                             </p>
                         </div>
                         {destinationCoords && (
