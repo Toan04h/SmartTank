@@ -369,7 +369,7 @@ function LiveTrip() {
                                 },
                                 body: JSON.stringify({ object_key })
                             })
-                        })().catch(() => {})
+                        })().catch((err) => { toast.error("Route image failed: " + err.message) })
                     }
 
                     // Empty the fields
