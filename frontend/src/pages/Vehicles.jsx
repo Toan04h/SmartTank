@@ -2,9 +2,6 @@ import { useEffect, useState } from "react"
 import { Plus, CarFront, Ellipsis, Star, GitCompareArrows, X } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, CartesianGrid } from "recharts"
-
-const COMPARE_COLORS = ["#3B82F6", "#22C55E", "#F97316"]
 
 // TODO: Change from user input to selection for year, make, model
 //       BLOCKED: no API endpoint returns distinct years/makes/models from the catalog
@@ -41,7 +38,6 @@ function Vehicles() {
     const [compareSelections, setCompareSelections] = useState([])
     const [compareResults, setCompareResults] = useState([])
     const [isCompareLoading, setIsCompareLoading] = useState(false)
-    const [isCompareResultsOpen, setIsCompareResultsOpen] = useState(false)
 
     // Fetch users garage
     useEffect(() => {
@@ -185,13 +181,10 @@ function Vehicles() {
         const data = await res.json()
         setCompareResults(data)
         setIsCompareLoading(false)
-        setIsComparing(false)
-        setIsCompareResultsOpen(true)
     }
 
-    // Resets all comparison state and closes both sheets
+    // Resets all comparison state and closes the sheet
     function handleCompareClose() {
-        setIsCompareResultsOpen(false)
         setIsComparing(false)
         setCompareSelections([])
         setCompareSearchResults([])
@@ -317,182 +310,201 @@ function Vehicles() {
                 </div>
             )}
 
-            {/* Vehicle Comparison Modal - bottom sheet */}
-            {isComparing &&
-            <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-                <div className="w-full max-w-xl max-h-[85vh] bg-card rounded-t-[28px] p-6 pb-8 flex flex-col gap-4 overflow-hidden">
-                    <div className="w-11 h-1.5 rounded-full bg-border mx-auto" />
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl font-extrabold text-foreground">Compare vehicles</h1>
-                            <p className="text-sm text-muted-foreground mt-0.5">Pick up to 2 vehicles to compare against your default car</p>
-                        </div>
-                        <button type="button" onClick={handleCompareClose} className="text-muted-foreground hover:text-foreground cursor-pointer"><X size={18} /></button>
-                    </div>
+            {/* Unified compare sheet — transitions between search, loading, and results */}
+            {isComparing && (
+            <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50" onClick={handleCompareClose}>
+                <div className="w-full max-w-xl max-h-[90vh] bg-card rounded-t-[28px] px-[22px] pt-[14px] pb-[26px] flex flex-col gap-4 overflow-y-auto [-webkit-overflow-scrolling:touch]"
+                    onClick={e => e.stopPropagation()}>
+                    <div className="w-[42px] h-[5px] rounded-full bg-border mx-auto shrink-0" />
 
+                    {/* Loading state */}
                     {isCompareLoading && (
-                        <div className="flex flex-col items-center justify-center py-10 gap-3">
-                            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                            <p className="text-sm text-muted-foreground">Calculating comparison...</p>
+                        <div className="h-[300px] flex flex-col items-center justify-center gap-[18px] shrink-0">
+                            <div className="w-11 h-11 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                            <p className="text-[15px] font-bold text-foreground">Calculating comparison…</p>
                         </div>
                     )}
 
-                    {/* Selected cars */}
-                    {!isCompareLoading && compareSelections.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
-                            {compareSelections.map(car => (
-                                <div key={car.id} className="flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full">
-                                    {car.year} {car.make} {car.model}
-                                    <button type="button" onClick={() => setCompareSelections(prev => prev.filter(c => c.id !== car.id))} className="cursor-pointer">
-                                        <X size={12} />
-                                    </button>
-                                </div>
-                            ))}
+                    {/* Search state */}
+                    {!isCompareLoading && compareResults.length === 0 && (<>
+                        <div className="flex items-start justify-between shrink-0">
+                            <div>
+                                <h1 className="text-[22px] font-extrabold text-foreground tracking-tight">Compare vehicles</h1>
+                                <p className="text-[13px] font-medium text-muted-foreground mt-1 max-w-[280px]">Pick up to 2 vehicles to compare against your default car</p>
+                            </div>
+                            <button type="button" onClick={handleCompareClose}
+                                className="w-[30px] h-[30px] rounded-[9px] bg-secondary flex items-center justify-center shrink-0 ml-2.5 cursor-pointer">
+                                <X size={14} className="text-muted-foreground" />
+                            </button>
                         </div>
-                    )}
 
-                    {/* Fields for car selection */}
-                    {!isCompareLoading && <>
-                    <div className="flex gap-3">
-                        <div className="w-24">
-                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Year</p>
-                            <input placeholder="2023" value={compareYear} type="text" onChange={(e) => setCompareYear(e.target.value)}
-                                className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Make</p>
-                            <input placeholder="Toyota" value={compareMake} type="text" onChange={(e) => setCompareMake(e.target.value)}
-                                className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Model</p>
-                        <input placeholder="Camry" value={compareModel} type="text" onChange={(e) => setCompareModel(e.target.value)}
-                            className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button type="button" disabled={isCompareSearching} onClick={handleCompareSearch}
-                            className="flex-1 h-12 rounded-xl bg-secondary text-foreground font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                            {isCompareSearching ? "Searching..." : "Search"}
-                        </button>
-                        <button type="button" disabled={compareSelections.length === 0} onClick={handleCompare}
-                            className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                            Compare
-                        </button>
-                    </div>
-
-                    {compareSearchResults.length > 0 && (
-                        <>
-                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">{compareSearchResults.length} results</p>
-                            <div className="flex-1 flex flex-col overflow-y-auto min-h-0 [-webkit-overflow-scrolling:touch]">
-                                {compareSearchResults.map((car, i) => (
-                                    <div key={car.id} onClick={() => handleCompareSelect(car)}
-                                        className={`flex items-center justify-between py-3.5 cursor-pointer ${i < compareSearchResults.length - 1 ? "border-b border-muted-foreground/20" : ""}`}>
-                                        <div>
-                                            <p className="text-[15px] font-bold text-foreground">{car.year} {car.make} {car.model}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{car.combined_mpg} MPG · {car.fuel_type} · {car.drive}</p>
-                                        </div>
-                                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                            <Plus size={16} className="text-primary" />
-                                        </div>
+                        {compareSelections.length > 0 && (
+                            <div className="flex gap-2 flex-wrap shrink-0">
+                                {compareSelections.map(car => (
+                                    <div key={car.id} className="flex items-center gap-[7px] h-8 pl-3 pr-2 bg-primary/10 rounded-full">
+                                        <span className="text-[13px] font-bold text-primary">{car.year} {car.make} {car.model}</span>
+                                        <button type="button"
+                                            onClick={() => setCompareSelections(prev => prev.filter(c => c.id !== car.id))}
+                                            className="w-[18px] h-[18px] rounded-full bg-primary/15 flex items-center justify-center cursor-pointer">
+                                            <X size={9} className="text-primary" />
+                                        </button>
                                     </div>
                                 ))}
                             </div>
-                        </>
-                    )}
-                    </>}
-                </div>
-            </div>}
+                        )}
 
-            {/* Vehicle Comparison Results Modal - bottom sheet */}
-            {isCompareResultsOpen &&
-            <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-                <div className="w-full max-w-xl max-h-[85vh] bg-card rounded-t-[28px] p-6 pb-8 flex flex-col gap-5 overflow-y-auto [-webkit-overflow-scrolling:touch]">
-                    <div className="w-11 h-1.5 rounded-full bg-border mx-auto shrink-0" />
-                    <div className="flex items-center justify-between shrink-0">
-                        <h1 className="text-xl font-extrabold text-foreground">Results</h1>
-                        <button type="button" onClick={handleCompareClose} className="text-muted-foreground hover:text-foreground cursor-pointer"><X size={18} /></button>
-                    </div>
+                        <div className="flex gap-2.5 shrink-0">
+                            <div className="w-[100px]">
+                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[.4px] mb-[7px]">Year</p>
+                                <input placeholder="2024" value={compareYear} type="text" onChange={e => setCompareYear(e.target.value)}
+                                    className="w-full h-12 px-3.5 rounded-xl bg-secondary text-[14px] font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[.4px] mb-[7px]">Make</p>
+                                <input placeholder="Toyota" value={compareMake} type="text" onChange={e => setCompareMake(e.target.value)}
+                                    className="w-full h-12 px-3.5 rounded-xl bg-secondary text-[14px] font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                            </div>
+                        </div>
+                        <div className="shrink-0">
+                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[.4px] mb-[7px]">Model</p>
+                            <input placeholder="Camry" value={compareModel} type="text" onChange={e => setCompareModel(e.target.value)}
+                                className="w-full h-12 px-3.5 rounded-xl bg-secondary text-[14px] font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                        </div>
+                        <div className="flex gap-2.5 shrink-0">
+                            <button type="button" disabled={isCompareSearching} onClick={handleCompareSearch}
+                                className="flex-1 h-12 rounded-[13px] bg-secondary text-foreground text-[15px] font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                {isCompareSearching ? "Searching..." : "Search"}
+                            </button>
+                            <button type="button" disabled={compareSelections.length === 0} onClick={handleCompare}
+                                className="flex-1 h-12 rounded-[13px] bg-primary text-primary-foreground text-[15px] font-bold cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                                Compare
+                            </button>
+                        </div>
 
-                    {/* Vehicle headline cards */}
-                    {(() => {
-                        const winnerIndex = compareResults.reduce((best, r, i) =>
-                            r.total_cost < compareResults[best].total_cost ? i : best, 0)
-                        return (
-                        <div className="flex flex-col gap-2 shrink-0">
-                            {compareResults.map((r, i) => (
-                                <div key={i} className="flex items-center justify-between bg-secondary rounded-xl px-4 py-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COMPARE_COLORS[i] }} />
+                        {compareSearchResults.length > 0 && (<>
+                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[.5px] shrink-0">{compareSearchResults.length} results</p>
+                            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto [-webkit-overflow-scrolling:touch]">
+                                {compareSearchResults.map((car, i) => (
+                                    <div key={car.id} onClick={() => handleCompareSelect(car)}
+                                        className={`flex items-center justify-between py-2 cursor-pointer ${i < compareSearchResults.length - 1 ? "border-b border-border" : ""}`}>
                                         <div>
-                                            <div className="flex items-center gap-1.5">
-                                                <p className="text-sm font-bold text-foreground">{r.is_baseline ? "Your car" : `${r.year} ${r.make} ${r.model}`}</p>
-                                                {i === winnerIndex && <span className="text-[10px] font-bold bg-green-500/15 text-green-500 px-1.5 py-0.5 rounded-md">Best</span>}
+                                            <p className="text-[15px] font-bold text-foreground">{car.year} {car.make} {car.model}</p>
+                                            <p className="text-[12px] font-medium text-muted-foreground mt-0.5">{car.displacement}L {car.cylinders} Cylinders | {car.combined_mpg} MPG | {car.fuel_type} | {car.drive} | {car.description}</p>
+                                        </div>
+                                        <button type="button" className="w-[30px] h-[30px] rounded-full border-[1.5px] border-primary bg-transparent flex items-center justify-center shrink-0 cursor-pointer">
+                                            <Plus size={14} className="text-primary" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </>)}
+                    </>)}
+
+                    {/* Results state */}
+                    {!isCompareLoading && compareResults.length > 0 && (() => {
+                        const winIdx = compareResults.reduce((b, r, i) =>
+                            r.total_cost != null && r.total_cost < (compareResults[b].total_cost ?? Infinity) ? i : b, 0)
+                        const colors = compareResults.map((_, i) =>
+                            (["#2767E5", "#1F9D57", "#E08A2B"])[i] ?? "#E08A2B"
+                        )
+                        return (<>
+                            <div className="flex items-center justify-between shrink-0">
+                                <h1 className="text-[22px] font-extrabold text-foreground tracking-tight">Results</h1>
+                                <button type="button" onClick={handleCompareClose}
+                                    className="w-[30px] h-[30px] rounded-[9px] bg-secondary flex items-center justify-center shrink-0 cursor-pointer">
+                                    <X size={14} className="text-muted-foreground" />
+                                </button>
+                            </div>
+
+                            {/* Headline cards */}
+                            <div className="flex flex-col gap-2.5 shrink-0">
+                                {compareResults.map((r, i) => {
+                                    const isWinner = i === winIdx
+                                    return (
+                                        <div key={i} className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border ${isWinner ? "bg-green-500/10 border-green-500/30" : "bg-card border-border"}`}>
+                                            <div className="flex items-center gap-[11px]">
+                                                <span className="w-[11px] h-[11px] rounded-full shrink-0" style={{ backgroundColor: colors[i] }} />
+                                                <div>
+                                                    <div className="flex items-center gap-[7px]">
+                                                        <span className="text-[15px] font-bold text-foreground">{r.is_baseline ? "Your car" : r.model}</span>
+                                                        {isWinner && <span className="text-[10px] font-extrabold uppercase tracking-[.3px] text-green-600 bg-green-500/15 px-2 py-0.5 rounded-[7px]">Best</span>}
+                                                    </div>
+                                                    <p className="text-[12px] font-medium text-muted-foreground mt-0.5">{r.year} {r.make} {r.model}</p>
+                                                </div>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">{r.year} {r.make} {r.model}</p>
+                                            {r.is_baseline
+                                                ? <span className="text-[13px] font-bold text-muted-foreground">Baseline</span>
+                                                : r.estimated_savings != null && (
+                                                    <span className={`text-[15px] font-extrabold ${r.estimated_savings >= 0 ? "text-green-600" : "text-red-500"}`}>
+                                                        {r.estimated_savings >= 0 ? `+$${r.estimated_savings.toFixed(2)}` : `-$${Math.abs(r.estimated_savings).toFixed(2)}`}
+                                                    </span>
+                                                )
+                                            }
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Bar charts */}
+                            {[
+                                { title: "Total cost ($)", vals: compareResults.map(r => r.total_cost), fmt: v => v != null ? `$${v.toFixed(2)}` : "—", yFmt: v => `$${v}` },
+                                { title: "Gallons used", vals: compareResults.map(r => r.total_gallons), fmt: v => v != null ? `${v.toFixed(1)} gal` : "—", yFmt: v => String(v) },
+                                { title: "CO₂ emissions (kg)", vals: compareResults.map(r => r.total_co2_kg), fmt: v => v != null ? `${v.toFixed(1)} kg` : "—", yFmt: v => String(v) },
+                            ].map(({ title, vals, fmt, yFmt }) => {
+                                const m = Math.max(...vals.filter(v => v != null && v > 0), 0.01)
+                                const step = Math.pow(10, Math.floor(Math.log10(m / 3)))
+                                const axMax = Math.ceil(m / step / 3) * step * 3
+                                const BAR_H = 80
+                                return (
+                                    <div key={title} className="shrink-0">
+                                        <p className="text-[14px] font-bold text-foreground mb-3">{title}</p>
+                                        <div className="flex gap-2">
+                                            {/* Y-axis */}
+                                            <div className="flex flex-col justify-between w-10 text-right shrink-0" style={{ paddingTop: "20px", paddingBottom: "20px" }}>
+                                                {[3, 2, 1, 0].map(t => (
+                                                    <span key={t} className="text-[9px] font-semibold text-muted-foreground leading-none">{yFmt(Math.round(axMax * t / 3))}</span>
+                                                ))}
+                                            </div>
+                                            {/* Chart area */}
+                                            <div className="flex-1 rounded-[14px] bg-secondary/50 px-4 py-3">
+                                                <div className="relative" style={{ height: `${BAR_H + 20}px` }}>
+                                                    {/* Gridlines */}
+                                                    <div className="absolute inset-x-0 bottom-0" style={{ height: `${BAR_H}px` }}>
+                                                        {[0, 1/3, 2/3, 1].map((t, j) => (
+                                                            <div key={j} className="absolute inset-x-0 h-px bg-border/60" style={{ bottom: `${t * 100}%` }} />
+                                                        ))}
+                                                    </div>
+                                                    {/* Bars + value labels */}
+                                                    <div className="absolute inset-0 flex items-end justify-around z-10">
+                                                        {vals.map((v, i) => {
+                                                            const h = (v != null && axMax) ? Math.max(3, Math.round((v / axMax) * BAR_H)) : 3
+                                                            return (
+                                                                <div key={i} className="flex flex-col items-center gap-1">
+                                                                    <span className="text-[10px] font-bold text-foreground leading-none">{fmt(v)}</span>
+                                                                    <div className="w-8" style={{ height: `${h}px`, backgroundColor: colors[i], borderRadius: "6px 6px 2px 2px" }} />
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                                {/* X-axis labels */}
+                                                <div className="flex justify-around mt-2">
+                                                    {compareResults.map((r, i) => (
+                                                        <span key={i} className="text-[10px] font-semibold text-muted-foreground text-center w-8 leading-none">
+                                                            {r.is_baseline ? "You" : r.model.split(" ")[0]}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    {!r.is_baseline && r.estimated_savings != null && (
-                                        <span className={`text-sm font-extrabold ${r.estimated_savings >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                            {r.estimated_savings >= 0 ? `Save $${r.estimated_savings.toFixed(2)}` : `-$${Math.abs(r.estimated_savings).toFixed(2)}`}
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                        )
+                                )
+                            })}
+                        </>)
                     })()}
-
-                    {/* Cost chart */}
-                    <div className="shrink-0">
-                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-3">Total Cost ($)</p>
-                        <ResponsiveContainer width="100%" height={140}>
-                            <BarChart data={compareResults.map((r, i) => ({ name: r.is_baseline ? "Your car" : r.model, value: r.total_cost, index: i }))} barSize={40}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.1} />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={45} tickFormatter={v => `$${v}`} />
-                                <Tooltip formatter={v => [`$${v?.toFixed(2)}`, "Cost"]} />
-                                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                                    {compareResults.map((_, i) => <Cell key={i} fill={COMPARE_COLORS[i]} />)}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* Gallons chart */}
-                    <div className="shrink-0">
-                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-3">Gallons Used</p>
-                        <ResponsiveContainer width="100%" height={140}>
-                            <BarChart data={compareResults.map((r, i) => ({ name: r.is_baseline ? "Your car" : r.model, value: r.total_gallons, index: i }))} barSize={40}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.1} />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={35} />
-                                <Tooltip formatter={v => [`${v?.toFixed(2)} gal`, "Gallons"]} />
-                                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                                    {compareResults.map((_, i) => <Cell key={i} fill={COMPARE_COLORS[i]} />)}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* CO2 chart */}
-                    <div className="shrink-0">
-                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-3">CO2 Emissions (kg)</p>
-                        <ResponsiveContainer width="100%" height={140}>
-                            <BarChart data={compareResults.map((r, i) => ({ name: r.is_baseline ? "Your car" : r.model, value: r.total_co2_kg, index: i }))} barSize={40}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.1} />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={35} />
-                                <Tooltip formatter={v => [`${v?.toFixed(2)} kg`, "CO2"]} />
-                                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                                    {compareResults.map((_, i) => <Cell key={i} fill={COMPARE_COLORS[i]} />)}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
                 </div>
-            </div>}
+            </div>
+            )}
 
             {/* Vehicle Adding Modal - bottom sheet */}
             {isAddingVehicle &&
