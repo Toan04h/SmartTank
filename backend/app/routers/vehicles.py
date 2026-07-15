@@ -12,7 +12,9 @@ from app.schemas.comparison import (
 from app.services.vehicle_service import (
     search_vehicle_from_db, delete_user_vehicle, 
     update_user_vehicle, add_user_vehicle, 
-    get_user_vehicles, build_vehicle_stat
+    get_user_vehicles, build_vehicle_stat,
+    get_all_years, get_makes_by_year,
+    get_models_by_year_make
 )
 from app.services.comparison_service import (
     compare_vehicle
@@ -27,6 +29,27 @@ router = APIRouter(
     prefix="/vehicles",
     tags=["vehicles"]
 )
+
+@router.get("/years", response_model=list[int])
+async def vehicle_years(
+    session: Session = Depends(get_session)
+):
+    return get_all_years(session)
+
+@router.get("/makes", response_model=list[str])
+async def vehicle_makes(
+    year: int,
+    session: Session = Depends(get_session)
+): 
+    return get_makes_by_year(year, session)
+
+@router.get("/models", response_model=list[str])
+async def vehicle_models(
+    year: int,
+    make: str,
+    session: Session = Depends(get_session)
+):
+    return get_models_by_year_make(year, make, session)
 
 @router.post("/compare", response_model=list[VehicleComparisonResult])
 async def compare_vehicles(

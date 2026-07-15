@@ -64,12 +64,42 @@ def search_vehicle_from_db(
             VehicleCatalog.year == year
         )
     ).all())
+    
     if not vehicle_list:
         raise HTTPException(
             status_code=404,
             detail=f"{year} {make} {model} not found in vehicle catalog"
         )
     return vehicle_list
+
+def get_all_years(
+    session: Session
+) -> list[int]:
+    return list(session.exec(
+        select(VehicleCatalog.year).distinct().order_by(col(VehicleCatalog.year).desc())
+    ).all())
+    
+def get_makes_by_year(
+    year: int,
+    session: Session
+) -> list[str]:
+    return list(session.exec(
+        select(VehicleCatalog.make).where(
+            VehicleCatalog.year==year
+        ).distinct().order_by(col(VehicleCatalog.make))
+    ).all())
+
+def get_models_by_year_make(
+    year: int,
+    make: str,
+    session: Session
+) -> list[str]:
+    return list(session.exec(
+        select(VehicleCatalog.model).where(
+            VehicleCatalog.year==year,
+            col(VehicleCatalog.make).ilike(make)
+        ).distinct().order_by(col(VehicleCatalog.model))
+    ).all())
     
 async def add_user_vehicle(
     vehicle_data: UserVehicleCreate,
