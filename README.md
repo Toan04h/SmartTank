@@ -224,8 +224,8 @@ pytest
 
 ## Team
 
-- [toan04h](https://github.com/toan04h) — backend, architecture, deployment
-- [jtran0027](https://github.com/jtran0027) — frontend
+- [toan04h](https://github.com/toan04h) 
+- [jtran0027](https://github.com/jtran0027)
 
 ## License
 
