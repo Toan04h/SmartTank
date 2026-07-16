@@ -16,6 +16,7 @@ function Trips() {
     const [isAdding, setIsAdding] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [isImageFullscreen, setIsImageFullscreen] = useState(false)
 
     // Fetch user's garage
     useEffect(() => {
@@ -155,6 +156,22 @@ function Trips() {
             </div>
             )}
 
+            {/* Route image fullscreen overlay */}
+            {isImageFullscreen && selectedTrip?.image_url && (
+                <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[60] p-6" onClick={() => setIsImageFullscreen(false)}>
+                    <div className="w-full max-w-xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm font-semibold text-white/70">Route</p>
+                            <button type="button" onClick={() => setIsImageFullscreen(false)}
+                                className="w-[30px] h-[30px] rounded-[9px] bg-white/10 flex items-center justify-center cursor-pointer">
+                                <X size={14} className="text-white" />
+                            </button>
+                        </div>
+                        <img src={selectedTrip.image_url} className="w-full rounded-2xl shadow-2xl" />
+                    </div>
+                </div>
+            )}
+
             {/* Trip Detail Bottom Sheet */}
             {isDetailOpen &&
             <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50" onClick={() => setIsDetailOpen(false)}>
@@ -190,7 +207,7 @@ function Trips() {
 
                             {/* Route image */}
                             {selectedTrip.image_url
-                                ? <img src={selectedTrip.image_url} className="w-full h-40 object-cover rounded-xl" />
+                                ? <img src={selectedTrip.image_url} onClick={() => setIsImageFullscreen(true)} className="w-full h-40 object-cover rounded-xl cursor-zoom-in" />
                                 : <div className="w-full h-40 rounded-xl bg-secondary flex items-center justify-center text-xs text-muted-foreground">No route image</div>
                             }
 
