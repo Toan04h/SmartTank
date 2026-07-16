@@ -19,7 +19,7 @@ async def calculate_trip(
         fuel_type = request.fuel_type or "Regular Gasoline"
         if request.fuel_price is None: 
             price_data = await get_fuel_price(fuel_type)
-            fuel_price = price_data["price_per_gallon"]
+            fuel_price = price_data["price"]
         else:
             fuel_price = request.fuel_price
             
