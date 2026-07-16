@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Plus, CarFront, Ellipsis, Star, GitCompareArrows, X } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
+import { fetchWithAuth } from "../api/fetchWithAuth"
 import { toast } from "sonner"
 
 // TODO: Change from user input to selection for year, make, model
@@ -41,9 +42,7 @@ function Vehicles() {
 
     // Fetch users garage
     useEffect(() => {
-        fetch(`${API_BASE_URL}/vehicles/garage`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/vehicles/garage`)
         .then(res => {
             if (res.ok) return res.json()
             return []
@@ -75,12 +74,9 @@ function Vehicles() {
 
     // Add user's car
     function handleCarSelect(car) {
-        fetch(`${API_BASE_URL}/vehicles`, {
+        fetchWithAuth(`${API_BASE_URL}/vehicles`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ catalog_id: car.id, is_default: false })
         })
         .then(res => res.json())
@@ -93,12 +89,9 @@ function Vehicles() {
 
     // Delete user's car
     function handleDelete(carId) {
-        fetch(`${API_BASE_URL}/vehicles/${carId}`, {
+        fetchWithAuth(`${API_BASE_URL}/vehicles/${carId}`, {
             method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
         })
         .then(res => {
             if (res.ok) {
@@ -114,12 +107,9 @@ function Vehicles() {
 
     // Handles setting user's default car
     function handleDefaultCar(vehicle_id) {
-        fetch(`${API_BASE_URL}/vehicles/${vehicle_id}/default`, {
+        fetchWithAuth(`${API_BASE_URL}/vehicles/${vehicle_id}/default`, {
             method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
         })
         .then(res => {
             if (res.ok) {
@@ -165,12 +155,9 @@ function Vehicles() {
     // Submits selected vehicles to the comparison API and shows results
     async function handleCompare() {
         setIsCompareLoading(true)
-        const res = await fetch(`${API_BASE_URL}/vehicles/compare`, {
+        const res = await fetchWithAuth(`${API_BASE_URL}/vehicles/compare`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ vehicle_list: compareSelections.map(c => c.id) })
         })
         if (!res.ok) {
@@ -208,12 +195,9 @@ function Vehicles() {
 
         setIsSavingEdit(true)
 
-        fetch(`${API_BASE_URL}/vehicles/${editingVehicle.id}`, {
+        fetchWithAuth(`${API_BASE_URL}/vehicles/${editingVehicle.id}`, {
             method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 nickname: editNickname,
                 mpg_override: editMpgOverride ? parseFloat(editMpgOverride) : null

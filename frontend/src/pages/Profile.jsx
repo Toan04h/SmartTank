@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { fetchWithAuth, logout } from "../api/fetchWithAuth"
 import { LogOut, Eye, EyeOff } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
 import { toast } from "sonner"
@@ -8,7 +8,6 @@ import { toast } from "sonner"
 //       Fix changing password once API for users/password is added
 
 function Profile() {
-    const navigate = useNavigate()
     const email = localStorage.getItem("email")
     const [fullName, setFullName] = useState("")
     const [state, setState] = useState("")
@@ -30,9 +29,7 @@ function Profile() {
 
     // Fetch user's profile
     useEffect(() => {
-        fetch(`${API_BASE_URL}/users/profile`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/users/profile`)
         .then(res => {
             if (res.ok) return res.json()
             return null
@@ -63,12 +60,9 @@ function Profile() {
             return
         }
 
-        fetch(`${API_BASE_URL}/users/profile`, {
+        fetchWithAuth(`${API_BASE_URL}/users/profile`, {
             method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 full_name: fullName, state: state, zip_code: zipCode
             })
@@ -114,12 +108,9 @@ function Profile() {
 
         setIsSubmitting(true)
 
-        fetch(`${API_BASE_URL}/users/password`, {
+        fetchWithAuth(`${API_BASE_URL}/users/password`, {
             method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 old_password: currentPassword, new_password: newPassword
             })
@@ -139,11 +130,8 @@ function Profile() {
         })
     }
 
-    // Clears the user's session and sends them back to login
     function handleLogout() {
-        localStorage.removeItem("token")
-        localStorage.removeItem("email")
-        navigate("/login")
+        logout()
     }
 
     return (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { API_BASE_URL } from "../api/config"
+import { fetchWithAuth } from "../api/fetchWithAuth"
 import { toast } from "sonner"
 import { Plus, MoveRight, MapPin, Car, X } from "lucide-react"
 
@@ -20,9 +21,7 @@ function Trips() {
 
     // Fetch user's garage
     useEffect(() => {
-        fetch(`${API_BASE_URL}/vehicles/garage`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/vehicles/garage`)
         .then(res => {
             if (res.ok) return res.json()
             return []
@@ -34,9 +33,7 @@ function Trips() {
 
     // Fetch user's trips
     useEffect(() => {
-        fetch(`${API_BASE_URL}/trips`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/trips`)
         .then(res => {
             if (res.ok) return res.json()
             return []
@@ -52,8 +49,8 @@ function Trips() {
         setIsDetailOpen(true)
         setIsDetailLoading(true)
         const [tripRes, imageRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/trips/${tripId}`, { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }),
-            fetch(`${API_BASE_URL}/trips/${tripId}/image`, { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } })
+            fetchWithAuth(`${API_BASE_URL}/trips/${tripId}`),
+            fetchWithAuth(`${API_BASE_URL}/trips/${tripId}/image`)
         ])
         const [tripData, imageData] = await Promise.all([tripRes.json(), imageRes.json()])
         setSelectedTrip({ ...tripData, image_url: imageData.image_url })
@@ -69,12 +66,9 @@ function Trips() {
 
         setIsSubmitting(true)
 
-        fetch(`${API_BASE_URL}/trips`, {
+        fetchWithAuth(`${API_BASE_URL}/trips`, {
             method: "POST",
-            headers: {
-                "Content-Type" : "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ vehicle_id: vehicleId, start_location: startLocation, end_location: endLocation, distance: parseFloat(distance) })
         })
         .then(res => {
