@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { LogOut, MoveRight } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
+import { fetchWithAuth, logout } from "../api/fetchWithAuth"
 
 function Dashboard() {
-    const navigate = useNavigate()
     const email = localStorage.getItem("email")
     const username = email?.split("@")[0]
     const [displayName, setDisplayName] = useState(username)
@@ -24,9 +24,7 @@ function Dashboard() {
 
     // Fetching user dashboard stats
     useEffect(() => {
-        fetch(`${API_BASE_URL}/users/dashboard`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/users/dashboard`)
         .then(res => {
             if (res.ok) return res.json()
             return null
@@ -39,9 +37,7 @@ function Dashboard() {
 
     // Fetch user's first name for the greeting
     useEffect(() => {
-        fetch(`${API_BASE_URL}/users/profile`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/users/profile`)
         .then(res => { if (res.ok) return res.json(); return null })
         .then(data => {
             const firstName = data?.full_name?.split(" ")[0]
@@ -51,9 +47,7 @@ function Dashboard() {
 
     // Fetch fuel prices
     useEffect(() => {
-        fetch(`${API_BASE_URL}/fuel/price`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/fuel/price`)
         .then(res => {
             if (res.ok) return res.json()
             return null
@@ -64,11 +58,8 @@ function Dashboard() {
         })
     }, [])
 
-    // Clears the user's session and sends them back to login
     function handleLogout() {
-        localStorage.removeItem("token")
-        localStorage.removeItem("email")
-        navigate("/login")
+        logout()
     }
 
     const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })

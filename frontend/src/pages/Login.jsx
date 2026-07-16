@@ -33,6 +33,7 @@ function Login() {
         // Redirect user to dashboard on success
         if (response.ok) {
             localStorage.setItem("token", data.access_token)
+            localStorage.setItem("refresh_token", data.refresh_token)
 
             // Get's user's email to be displayed
             const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {

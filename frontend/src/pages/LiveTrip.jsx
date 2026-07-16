@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react"
 import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api"
 import { Car, Navigation, Square, LocateFixed, ChevronDown } from "lucide-react"
 import { API_BASE_URL } from "../api/config"
+import { fetchWithAuth } from "../api/fetchWithAuth"
 import { toast } from "sonner"
 import { useTracking } from "../context/TrackingContext"
 import polyline from "@mapbox/polyline"
@@ -54,9 +55,7 @@ function LiveTrip() {
 
     // Fetch user's garage
     useEffect(() => {
-        fetch(`${API_BASE_URL}/vehicles/garage`, {
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
+        fetchWithAuth(`${API_BASE_URL}/vehicles/garage`)
         .then(res => {
             if (res.ok) return res.json()
             return []
@@ -92,10 +91,7 @@ function LiveTrip() {
             setStartCoords( { lat: latPos, lng: longPos} )
 
             // Turns the raw coordinates into a readable address for display
-            fetch(`${API_BASE_URL}/maps/reverse-geocode?lat=${latPos}&lng=${longPos}`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-            })
+            fetchWithAuth(`${API_BASE_URL}/maps/reverse-geocode?lat=${latPos}&lng=${longPos}`)
             .then(res => {
                 if (res.ok) return res.json()
                 return null
@@ -126,10 +122,7 @@ function LiveTrip() {
                 ? `&lat=${currentPosition.lat}&lng=${currentPosition.lng}`
                 : ""
 
-            fetch(`${API_BASE_URL}/maps/autocomplete?input=${encodeURIComponent(query)}${biasParams}`, {
-                method: "GET",
-                headers: {"Authorization": `Bearer ${localStorage.getItem("token")}`}
-            })
+            fetchWithAuth(`${API_BASE_URL}/maps/autocomplete?input=${encodeURIComponent(query)}${biasParams}`)
             .then(res => {
                 if (res.ok) return res.json()
                 return null
@@ -147,10 +140,7 @@ function LiveTrip() {
 
     // Select a search result to lock in the start or destination coordinates
     function handleSelectAddress(placeId, isDestination) {
-        fetch(`${API_BASE_URL}/maps/geocode?place_id=${encodeURIComponent(placeId)}`, {
-            method: "GET",
-            headers: {"Authorization": `Bearer ${localStorage.getItem("token")}`}
-        })
+        fetchWithAuth(`${API_BASE_URL}/maps/geocode?place_id=${encodeURIComponent(placeId)}`)
         .then(res => {
             if (res.ok) return res.json()
             return null
@@ -332,12 +322,9 @@ function LiveTrip() {
         const finalPosition = lastPointRef.current || currentPosition
 
         const submitTrip = (endAddress) => {
-            fetch(`${API_BASE_URL}/trips`, {
+            fetchWithAuth(`${API_BASE_URL}/trips`, {
                 method: "POST",
-                headers: {
-                    "Content-Type" : "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     vehicle_id: vehicleId,
                     start_location: startAddress,
@@ -349,11 +336,7 @@ function LiveTrip() {
             })
             .then(res => {
                 if (res.ok) return res.json()
-                if (res.status === 401) {
-                    toast.error("Your session expired. Please log in again to save this trip.")
-                } else {
-                    toast.error("Could not save your trip.")
-                }
+                toast.error("Could not save your trip.")
                 return null
             })
             .then(data => {
@@ -367,9 +350,8 @@ function LiveTrip() {
                         ;(async () => {
                             const imageBlob = await fetch(staticUrl).then(r => r.blob())
 
-                            const { upload_url, object_key } = await fetch(`${API_BASE_URL}/trips/${data.id}/image-upload-url`, {
-                                method: "POST",
-                                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                            const { upload_url, object_key } = await fetchWithAuth(`${API_BASE_URL}/trips/${data.id}/image-upload-url`, {
+                                method: "POST"
                             }).then(r => r.json())
 
                             await fetch(upload_url, {
@@ -378,12 +360,9 @@ function LiveTrip() {
                                 headers: { "Content-Type": "image/png" }
                             })
 
-                            await fetch(`${API_BASE_URL}/trips/${data.id}/image`, {
+                            await fetchWithAuth(`${API_BASE_URL}/trips/${data.id}/image`, {
                                 method: "PATCH",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                                },
+                                headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ object_key })
                             })
                         })().catch((err) => { toast.error("Route image failed: " + err.message) })
@@ -418,10 +397,7 @@ function LiveTrip() {
 
         // For manual stop or straying, reverse-geocode wherever the trip actually ended
         if (finalPosition) {
-            fetch(`${API_BASE_URL}/maps/reverse-geocode?lat=${finalPosition.lat}&lng=${finalPosition.lng}`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-            })
+            fetchWithAuth(`${API_BASE_URL}/maps/reverse-geocode?lat=${finalPosition.lat}&lng=${finalPosition.lng}`)
             .then(res => {
                 if (res.ok) return res.json()
                 return null
