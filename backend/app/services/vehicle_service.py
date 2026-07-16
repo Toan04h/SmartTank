@@ -1,8 +1,7 @@
 import uuid
-from sqlmodel import col
 from fastapi import HTTPException
 from datetime import datetime
-from sqlmodel import Session, select
+from sqlmodel import Session, select, delete, col
 from app.models.user import User
 from app.models.trip import Trip
 from app.models.vehicle_catalog import VehicleCatalog
@@ -206,6 +205,13 @@ def delete_user_vehicle(
             detail="vehicle not found or does not belong to you"
         )
         
+    trips = session.exec(
+        select(Trip).where(
+            Trip.vehicle_id==vehicle.id
+        )
+    ).all()
+    
+    session.exec(delete(Trip).where(col(Trip.vehicle_id)==vehicle.id))
     session.delete(vehicle)
     session.commit()
     
