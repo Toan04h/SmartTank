@@ -287,6 +287,7 @@ function LiveTrip() {
 
             startTimeRef.current = new Date().toISOString()
             localStorage.setItem("liveTripActive", "true")
+            localStorage.setItem("liveTripStartTime", startTimeRef.current)
 
             // Keeps the screen from auto-locking while actively tracking
             navigator.wakeLock?.request("screen")
@@ -306,6 +307,7 @@ function LiveTrip() {
     function handleStopTrip(reason) {
         navigator.geolocation.clearWatch(watchIdRef.current)
         localStorage.removeItem("liveTripActive")
+        localStorage.removeItem("liveTripStartTime")
 
         wakeLockRef.current?.release()
         wakeLockRef.current = null
@@ -341,7 +343,7 @@ function LiveTrip() {
                     start_location: startAddress,
                     end_location: endAddress,
                     distance: distanceRef.current,
-                    start_time: startTimeRef.current,
+                    start_time: startTimeRef.current || localStorage.getItem("liveTripStartTime"),
                     end_time: new Date().toISOString()
                 })
             })
