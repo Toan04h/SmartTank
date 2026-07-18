@@ -22,8 +22,8 @@ async def build_dashboard(
 
     default_vehicle = UserVehicleResponse.model_validate(user_default_vehicle) if user_default_vehicle else None
     
-    month = datetime.now().month
-    year = datetime.now().year
+    month = datetime.utcnow().month
+    year = datetime.utcnow().year
     
     start_of_month = datetime(year, month, 1, 0, 0, 0)
     _, total_days = calendar.monthrange(year, month)

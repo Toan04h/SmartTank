@@ -1,5 +1,7 @@
 # SmartTank ⛽
 
+[![Backend Tests](https://github.com/Toan04h/SmartTank/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/Toan04h/SmartTank/actions/workflows/backend-tests.yml)
+
 A full-stack fuel tracking and vehicle intelligence app. Log your trips, see what they actually cost using live fuel prices, track your CO2, and compare your car against others using your own real driving history.
 
 **Live app:** [smart-tank.vercel.app](https://smart-tank.vercel.app) · **API docs:** [smarttank-production.up.railway.app/docs](https://smarttank-production.up.railway.app/docs)
@@ -211,16 +213,19 @@ Core features are complete and deployed. Built over Summer 2026.
 - Route image upload has intermittent errors
 
 **Future work**
-- Cascade delete for trips when a vehicle is removed
 - Plug-in hybrid split-costing (currently approximated using the primary fuel type)
 - S3 lifecycle rule for 90-day image retention
 
 ## Testing
 
+The backend has 137 pytest tests covering every service and router — calculation, auth, users, vehicles, trips, dashboard, comparison, and the external integrations (EIA fuel pricing, Google Maps, S3). Router tests exercise real HTTP requests through FastAPI's `TestClient` against an in-memory SQLite database; external APIs (EIA, Google, AWS) are mocked, so the full suite runs offline with no real credentials needed.
+
 ```bash
 cd backend
 pytest
 ```
+
+A [GitHub Actions workflow](.github/workflows/backend-tests.yml) runs the full suite on every PR and push to `main` touching `backend/**`.
 
 ## Team
 
