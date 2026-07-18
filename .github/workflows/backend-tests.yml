@@ -1,0 +1,43 @@
+name: Backend Tests
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: backend/.python-version
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/smarttank
+          EIA_API_KEY: test-eia-api-key
+          APP_ENV: test
+          SECRET_KEY: test-secret-key
+          GOOGLE_SERVICES_API_KEY: test-google-services-api-key
+          AWS_ACCESS_KEY_ID: test-aws-access-key-id
+          AWS_SECRET_ACCESS_KEY: test-aws-secret-access-key
+          AWS_S3_BUCKET: test-bucket
+          AWS_S3_REGION: us-east-2
+        run: pytest tests/ -v
