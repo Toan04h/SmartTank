@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, Session, create_engine
+from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.core.database import get_session
@@ -20,9 +21,14 @@ def anyio_backend():
 
 @pytest.fixture
 def session():
+    # StaticPool keeps a single shared connection alive for the whole engine,
+    # since TestClient runs endpoint code in a worker thread and the default
+    # SQLite in-memory pool is per-thread (each thread would otherwise see its
+    # own empty database).
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:

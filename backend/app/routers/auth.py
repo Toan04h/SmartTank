@@ -22,8 +22,9 @@ async def user_register(
     
     hashed = hash_password(request.password)
     create_user(
-        email=request.email, 
-        hashed_password=hashed, 
+        email=request.email,
+        hashed_password=hashed,
+        full_name=request.full_name,
         state=request.state,
         zip_code=request.zip_code,
         session=session)

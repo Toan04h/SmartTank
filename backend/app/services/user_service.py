@@ -16,15 +16,17 @@ def get_user_by_email(email: str, session: Session) -> Optional[User]:
     return user
 
 def create_user(
-    email: str, 
-    hashed_password: str, 
+    email: str,
+    hashed_password: str,
     session: Session,
+    full_name: Optional[str] = None,
     state: Optional[str] = None,
     zip_code: Optional[str] = None
 ) -> User:
     user = User(
-        email=email, 
+        email=email,
         hashed_password=hashed_password,
+        full_name=full_name,
         state=state,
         zip_code=zip_code
     )
