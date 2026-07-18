@@ -12,6 +12,7 @@ from app.core.limiter import limiter
 from app.models.user import User
 from app.models.user_vehicle import UserVehicle
 from app.models.vehicle_catalog import VehicleCatalog
+from app.models.trip import Trip
 
 
 @pytest.fixture
@@ -93,6 +94,7 @@ def make_vehicle_catalog(session, **overrides: Any):
 def make_user_vehicle(session, user_id, **overrides: Any):
     defaults: dict[str, Any] = dict(
         user_id=user_id,
+        catalog_id=uuid.uuid4(),
         make="Honda",
         model="Accord",
         year=2021,
@@ -103,3 +105,21 @@ def make_user_vehicle(session, user_id, **overrides: Any):
     session.commit()
     session.refresh(vehicle)
     return vehicle
+
+
+def make_trip(session, user_id, vehicle_id, **overrides: Any):
+    defaults: dict[str, Any] = dict(
+        user_id=user_id,
+        vehicle_id=vehicle_id,
+        distance=10.0,
+        gallons_used=1.0,
+        fuel_price=3.5,
+        trip_cost=3.5,
+        co2_kg=8.89,
+    )
+    defaults.update(overrides)
+    trip = Trip(**defaults)
+    session.add(trip)
+    session.commit()
+    session.refresh(trip)
+    return trip
