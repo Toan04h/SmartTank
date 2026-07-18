@@ -5,7 +5,7 @@ from app.services.dashboard_service import build_dashboard
 from tests.conftest import make_user, make_user_vehicle, make_trip
 
 def _current_month_bounds():
-    now = datetime.now()
+    now = datetime.utcnow()
     start_of_month = datetime(now.year, now.month, 1, 0, 0, 0)
     _, total_days = calendar.monthrange(now.year, now.month)
     end_of_month = datetime(now.year, now.month, total_days, 23, 59, 59)

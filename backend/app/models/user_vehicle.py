@@ -11,7 +11,7 @@ class UserVehicle(SQLModel, table=True):
         primary_key=True
     )
     user_id: uuid.UUID = Field(foreign_key="users.id")
-    catalog_id: uuid.UUID = Field(default=None, foreign_key="vehicle_catalog.id")
+    catalog_id: Optional[uuid.UUID] = Field(default=None, foreign_key="vehicle_catalog.id")
     nickname: Optional[str] = None
     make: str
     model: str
