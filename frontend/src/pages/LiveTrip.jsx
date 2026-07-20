@@ -10,7 +10,8 @@ import polyline from "@mapbox/polyline"
 const RADIUS_CAP_MILES = 50
 const STRAY_BUFFER_MILES = 2.5
 const ARRIVAL_THRESHOLD_MILES = 0.1
-const MIN_TRIP_DISTANCE_MILES = 0.02 // below this, treat as no real movement - discard locally, no API calls at all
+const MIN_TRIP_DISTANCE_MILES = 0.02
+const MIN_PATH_POINT_MILES = 0.003 // ~5 meters — filters GPS jitter from the saved route image // below this, treat as no real movement - discard locally, no API calls at all
 
 const mapContainerStyle = {
     width: "100%",
@@ -243,11 +244,17 @@ function LiveTrip() {
                         distanceRef.current = next
                         return next
                     })
+                    // Stores the new point for the live route drawn on the map,
+                    // only if moved enough to filter GPS jitter from the saved image
+                    if (segment >= MIN_PATH_POINT_MILES) {
+                        lastPointRef.current = newPoint
+                        setPath(prev => [...prev, newPoint])
+                    }
+                } else {
+                    // Always store the first point
+                    lastPointRef.current = newPoint
+                    setPath(prev => [...prev, newPoint])
                 }
-
-                // Stores the new point for the live route drawn on the map
-                lastPointRef.current = newPoint
-                setPath(prev => [...prev, newPoint])
 
                 // Skip all destination-based logic entirely when free-roaming with no destination set
                 if (!destinationCoords) return
