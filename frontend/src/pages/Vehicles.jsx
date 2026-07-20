@@ -26,6 +26,9 @@ function Vehicles() {
     const [make, setMake] = useState("")
     const [model, setModel] = useState("")
     const [year, setYear] = useState("")
+    const [years, setYears] = useState([])      // options for search
+    const [makes, setMakes] = useState([])      // options for search
+    const [models, setModels] = useState([])    // options for search
     const [searchResults, setSearchResults] = useState([])
     const [isOpen, setIsOpen] = useState(null)
     const [isSearching, setIsSearching] = useState(false)
@@ -39,6 +42,7 @@ function Vehicles() {
     const [compareSelections, setCompareSelections] = useState([])
     const [compareResults, setCompareResults] = useState([])
     const [isCompareLoading, setIsCompareLoading] = useState(false)
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
     // Fetch users garage
     useEffect(() => {
@@ -52,6 +56,52 @@ function Vehicles() {
             setIsLoading(false)
         })
     }, [])
+
+    // Fetch all car years
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/vehicles/years`)
+        .then(res => {
+            if (res.ok) return res.json()
+            return []
+        })
+        .then(data => {
+            setYears(data)
+        })
+    }, [])
+
+    // Fetch all makes based on year
+    useEffect(() => {
+        if (!year) return
+        setMake("")
+        setModel("")
+        setMakes([])
+        setModels([])
+
+        fetch(`${API_BASE_URL}/vehicles/makes?year=${year}`)
+        .then(res => {
+            if (res.ok) return res.json()
+            return []
+        })
+        .then(data => {
+            setMakes(data)
+        })
+    }, [year])
+
+    // Fetch all models based on year and make
+    useEffect(() => {
+        if (!year || !make) return
+        setModel("")
+        setModels([])
+
+        fetch(`${API_BASE_URL}/vehicles/models?year=${year}&make=${make}`)
+        .then(res => {
+            if (res.ok) return res.json()
+            return []
+        })
+        .then(data => {
+            setModels(data)
+        })
+    }, [year, make])
 
     // Fetch user's car search
     const carSearching = () => {
@@ -277,7 +327,7 @@ function Vehicles() {
                                         <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg flex flex-col min-w-[140px] z-10 overflow-hidden">
                                             <button type="button" onClick={() => handleDefaultCar(car.id)} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-foreground">Set Default</button>
                                             <button type="button" onClick={() => handleEditOpen(car)} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-foreground">Edit</button>
-                                            <button type="button" onClick={() => handleDelete(car.id)} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-destructive">Delete</button>
+                                            <button type="button" onClick={() => { setIsOpen(null); setConfirmDeleteId(car.id) }} className="px-4 py-2.5 text-sm hover:bg-secondary cursor-pointer text-left text-destructive">Delete</button>
                                         </div>
                                     )}
                                 </div>
@@ -503,25 +553,34 @@ function Vehicles() {
                     <div className="flex gap-3">
                         <div className="w-24">
                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Year</p>
-                            <input placeholder="2023" value={year} type="text" onChange={(e) => setYear(e.target.value)}
-                                className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                            <select value={year} onChange={(e) => setYear(e.target.value)}
+                                className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground focus:outline-none">
+                                <option value="">Year</option>
+                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
                         </div>
                         <div className="flex-1">
                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Make</p>
-                            <input placeholder="Toyota" value={make} type="text" onChange={(e) => setMake(e.target.value)}
-                                className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                            <select value={make} onChange={(e) => setMake(e.target.value)} disabled={!year}
+                                className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground focus:outline-none disabled:opacity-50">
+                                <option value="">Make</option>
+                                {makes.map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
                         </div>
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Model</p>
-                        <input placeholder="Camry" value={model} type="text" onChange={(e) => setModel(e.target.value)}
-                            className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                        <select value={model} onChange={(e) => setModel(e.target.value)} disabled={!make}
+                            className="w-full px-3 py-3 rounded-xl bg-secondary text-foreground focus:outline-none disabled:opacity-50">
+                            <option value="">Model</option>
+                            {models.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
                     </div>
 
                     <div className="flex flex-row gap-3">
-                        <button type="button" onClick={() => { setIsAddingVehicle(false); setYear(""); setMake(""); setModel(""); setSearchResults([]) }}
+                        <button type="button" onClick={() => { setIsAddingVehicle(false); setYear(""); setMake(""); setModel(""); setMakes([]); setModels([]); setSearchResults([]) }}
                             className="flex-1 h-12 rounded-xl bg-secondary text-muted-foreground font-bold cursor-pointer">Cancel</button>
-                        <button type="button" disabled={isSearching} onClick={carSearching}
+                        <button type="button" disabled={isSearching || !year || !make || !model} onClick={carSearching}
                             className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-bold cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                             {isSearching ? "Searching..." : "Search"}
                         </button>
@@ -580,6 +639,24 @@ function Vehicles() {
                     </div>
                 </form>
             </div>}
+
+            {/* Delete confirmation */}
+            {confirmDeleteId && (
+            <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+                <div className="w-full max-w-xl bg-card rounded-t-[28px] p-6 pb-8 flex flex-col gap-4">
+                    <div className="w-11 h-1.5 rounded-full bg-border mx-auto" />
+                    <div>
+                        <h1 className="text-xl font-extrabold text-foreground">Delete car?</h1>
+                        <p className="text-sm text-muted-foreground mt-1">This will also delete any trips associated with this car. This cannot be undone.</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button type="button" onClick={() => setConfirmDeleteId(null)}
+                            className="flex-1 h-12 rounded-xl bg-secondary text-muted-foreground font-bold cursor-pointer">Cancel</button>
+                        <button type="button" onClick={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+                            className="flex-1 h-12 rounded-xl bg-destructive text-white font-bold cursor-pointer shadow-sm">Delete</button>
+                    </div>
+                </div>
+            </div>)}
         </div>
     )
 }
