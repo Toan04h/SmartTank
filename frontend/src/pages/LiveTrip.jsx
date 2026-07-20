@@ -48,6 +48,7 @@ function LiveTrip() {
     const mapRef = useRef(null) // underlying Google Map instance, used for the recenter button
     const distanceRef = useRef(0) // mirrors `distance` so the watchPosition closure (created once at Start,
     // never recreated) can read the live total instead of whatever it was frozen at when tracking began
+    const isStoppingRef = useRef(false) // prevents handleStopTrip from firing twice if two GPS updates both trigger arrival
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -295,6 +296,8 @@ function LiveTrip() {
 
     // Stops tracking (manually, or automatically via arrival/straying) and submits the trip
     function handleStopTrip(reason) {
+        if (isStoppingRef.current) return
+        isStoppingRef.current = true
         navigator.geolocation.clearWatch(watchIdRef.current)
         localStorage.removeItem("liveTripActive")
         localStorage.removeItem("liveTripStartTime")
@@ -312,6 +315,7 @@ function LiveTrip() {
             closestDistanceRef.current = null
             setClosestDistanceToDestination(null)
             setIsTracking(false)
+            isStoppingRef.current = false
             toast.info("Trip discarded - no distance traveled.")
             return
         }
@@ -334,9 +338,10 @@ function LiveTrip() {
                     end_time: new Date().toISOString()
                 })
             })
-            .then(res => {
+            .then(async res => {
                 if (res.ok) return res.json()
-                toast.error("Could not save your trip.")
+                const err = await res.json().catch(() => ({}))
+                toast.error("Could not save trip: " + (err.detail || `${res.status}`))
                 return null
             })
             .then(data => {
@@ -386,6 +391,7 @@ function LiveTrip() {
 
                 setIsTracking(false)
                 setIsSubmitting(false)
+                isStoppingRef.current = false
             })
         }
 
