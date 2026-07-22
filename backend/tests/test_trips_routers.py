@@ -38,6 +38,17 @@ def test_log_trip_vehicle_not_owned_returns_404(client, session, monkeypatch):
 
     assert response.status_code == 404
 
+def test_log_trip_unexpected_error_returns_generic_message(client, session, test_user, monkeypatch):
+    async def _raise(fuel_type, state=None):
+        raise RuntimeError("connection string: postgresql://user:hunter2@internal-db/prod")
+    monkeypatch.setattr("app.services.trip_service.get_fuel_price", _raise)
+    vehicle = make_user_vehicle(session, test_user.id, mpg_override=25.0)
+
+    response = client.post("/trips", json={"vehicle_id": str(vehicle.id), "distance": 100.0})
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Internal server error"}
+
 # --- GET /trips ---
 
 def test_get_trips_only_lists_own_trips(client, session, test_user):
