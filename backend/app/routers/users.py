@@ -18,6 +18,7 @@ async def get_dashboard(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Returns the current calendar month's trip stats and the user's 5 most recent trips."""
     try:
         return await build_dashboard(user, session)
     except HTTPException:
@@ -29,7 +30,8 @@ async def get_dashboard(
 def current_user_profile(
     user: User = Depends(get_current_user),
 ) -> User:
-    return user 
+    """Returns the authenticated user's profile."""
+    return user
 
 @router.patch("/profile", response_model=UserResponse)
 def update_current_user_profile(
@@ -37,6 +39,7 @@ def update_current_user_profile(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ) -> User:
+    """Partially updates the authenticated user's profile. Omitted fields are left unchanged."""
     return update_user_profile(user.id, request, session)
 
 @router.patch("/password", response_model=UserResponse)
@@ -45,6 +48,7 @@ async def change_user_password(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Changes the authenticated user's password after verifying the old one."""
     try:
         return change_password(request, user, session)
     except HTTPException:

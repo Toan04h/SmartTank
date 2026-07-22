@@ -34,13 +34,15 @@ router = APIRouter(
 async def vehicle_years(
     session: Session = Depends(get_session)
 ):
+    """Lists all distinct model years present in the vehicle catalog, newest first."""
     return get_all_years(session)
 
 @router.get("/makes", response_model=list[str])
 async def vehicle_makes(
     year: int,
     session: Session = Depends(get_session)
-): 
+):
+    """Lists distinct makes available for a given model year."""
     return get_makes_by_year(year, session)
 
 @router.get("/models", response_model=list[str])
@@ -49,6 +51,7 @@ async def vehicle_models(
     make: str,
     session: Session = Depends(get_session)
 ):
+    """Lists distinct models available for a given year and make."""
     return get_models_by_year_make(year, make, session)
 
 @router.post("/compare", response_model=list[VehicleComparisonResult])
@@ -57,6 +60,8 @@ async def compare_vehicles(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Compares up to 4 catalog vehicles against the user's default vehicle,
+    projecting cost/CO2 using the user's actual trip history."""
     try:
         return await compare_vehicle(request, user, session)
     except HTTPException:
@@ -70,6 +75,7 @@ async def vehicle_search(
     request: VehicleSearchRequest,
     session: Session = Depends(get_session)
 ):
+    """Searches the EPA vehicle catalog by make, model, and year (case-insensitive, partial model match)."""
     try:
         return search_vehicle_from_db(
             request.make, 
@@ -89,7 +95,10 @@ async def add_vehicle(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    try: 
+    """Adds a catalog vehicle to the user's garage. MPG resolves as
+    override > alt-fuel combined MPG > combined MPG. Setting is_default
+    unsets any previously default vehicle."""
+    try:
         catalog = session.get(VehicleCatalog, request.catalog_id)
         if catalog is None:
             raise HTTPException(
@@ -127,6 +136,7 @@ async def user_vehicles(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Lists every vehicle in the authenticated user's garage."""
     return get_user_vehicles(user.id, session)
 
 @router.get("/{vehicle_id}/stats", response_model=VehicleStats)
@@ -135,6 +145,7 @@ async def get_vehicle_stats(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Returns lifetime trip stats (distance, fuel, cost, CO2) for one garage vehicle."""
     try:
         return await build_vehicle_stat(vehicle_id, user, session)
     except HTTPException:
@@ -148,6 +159,8 @@ async def set_default_vehicle(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Sets a garage vehicle as the user's default, unsetting any previous one.
+    A user has at most one default vehicle at a time."""
     existing_default = session.exec(
         select(UserVehicle).where(
             UserVehicle.user_id == user.id,
@@ -185,6 +198,7 @@ async def edit_vehicle(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Partially updates a garage vehicle's nickname or MPG override. Omitted fields are left unchanged."""
     return update_user_vehicle(vehicle_id, user.id, request, session)
 
 @router.delete("/{vehicle_id}", status_code=204)
@@ -193,5 +207,6 @@ async def delete_vehicle(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """Removes a vehicle from the user's garage. Also deletes every trip logged against it."""
     return delete_user_vehicle(vehicle_id, user.id, session)
 

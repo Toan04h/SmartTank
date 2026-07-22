@@ -10,39 +10,33 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-"""
-Hashes a plain text password using bcrypt.    
-"""
 def hash_password(password: str) -> str:
+    """Hashes a plain text password using bcrypt."""
     return pwd_context.hash(password)
 
-"""
-Verifies a plain text password against a bcrypt hash.
-"""
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifies a plain text password against a bcrypt hash."""
     return pwd_context.verify(plain_password, hashed_password)
 
 def generate_refresh_token() -> str:
+    """Generates a cryptographically random opaque refresh token."""
     return secrets.token_urlsafe(32)
 
 def hash_refresh_token(token: str) -> str:
+    """Hashes a refresh token for storage, so raw tokens are never persisted."""
     return hashlib.sha256(token.encode()).hexdigest()
 
-"""
-Create a signed JWT token with expiry.
-"""
 def create_access_token(data: dict) -> str:
+    """Creates a signed JWT access token, embedding data["sub"] as the subject."""
     expiry = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    return jwt.encode({"sub":data["sub"], "exp": expiry}, 
-                   settings.SECRET_KEY, 
+    return jwt.encode({"sub":data["sub"], "exp": expiry},
+                   settings.SECRET_KEY,
                    algorithm="HS256")
-    
-"""
-Decodes and validates a JWT token. Raises 401 if invalid or expired.
-"""
+
 def decode_access_token(token: str) -> dict:
+    """Decodes and validates a JWT access token. Raises 401 if invalid or expired."""
     try:
-        return jwt.decode(token, settings.SECRET_KEY, 
+        return jwt.decode(token, settings.SECRET_KEY,
                           algorithms=["HS256"])
-    except JWTError: 
+    except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")

@@ -13,6 +13,7 @@ router = APIRouter(
 async def fuel_price_endpoint(
     current_user: User = Depends(get_current_user)
 ):
+    """Returns current gasoline, diesel, and electricity prices, all fetched concurrently."""
     try:
         gas, diesel, electricity = await asyncio.gather(
             get_fuel_price("Regular Gasoline"),

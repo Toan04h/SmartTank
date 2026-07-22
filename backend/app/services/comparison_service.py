@@ -13,7 +13,16 @@ async def compare_vehicle(
     user: User,
     session: Session
 ) -> list[VehicleComparisonResult]:
+    """Compares up to 4 catalog vehicles against the user's default vehicle,
+    projecting each one's cost/CO2 over the user's actual trip distance so far.
 
+    Baseline MPG resolves as: user's mpg_override > default vehicle's
+    combined_mpg_alt > combined_mpg. Compared vehicles use combined_mpg_alt
+    over combined_mpg (no per-vehicle override). If the baseline has zero
+    trip distance, every result is zeroed out without fetching a fuel price.
+    The first item in the result is always the baseline (estimated_savings
+    is None); the rest have estimated_savings relative to it.
+    """
     comparison_list = []
     
     user_default_vehicle = session.exec(
@@ -118,6 +127,8 @@ async def compare_vehicle(
     return comparison_list
     
 async def _build_result(catalog, mpg, total_distance, total_trips, is_baseline, baseline_cost, state, session):
+    """Builds one comparison entry. Skips fetching a fuel price entirely when
+    total_distance is 0, since there's nothing to price."""
     fuel_type = catalog.fuel_type or "Regular Gasoline"
     
     if total_distance > 0:

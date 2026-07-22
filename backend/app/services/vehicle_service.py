@@ -105,7 +105,8 @@ async def add_user_vehicle(
     user_id: uuid.UUID,
     session: Session
 ) -> dict:
-    """Adds a vehicle to the user's garage."""
+    """Adds a vehicle to the user's garage. A user has at most one default
+    vehicle: if vehicle_data.is_default is set, any existing default is unset."""
     if vehicle_data.is_default:
         existing_default = session.exec(
             select(UserVehicle). where(
@@ -189,9 +190,10 @@ def update_user_vehicle(
 def delete_user_vehicle(
     vehicle_id: uuid.UUID,
     user_id: uuid.UUID,
-    session: Session 
+    session: Session
 ) -> None:
-    """Deletes a vehicle from the user's garage."""
+    """Deletes a vehicle from the user's garage, cascading to delete every
+    trip logged against it (trips have no meaning without their vehicle)."""
     vehicle = session.exec(
         select(UserVehicle).where(
             UserVehicle.id == vehicle_id,
