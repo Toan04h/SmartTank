@@ -12,7 +12,8 @@ async def build_dashboard(
     user: User,
     session: Session
 ) -> DashboardStats:
-    
+    """Builds the user's dashboard: current calendar month's trip stats (UTC,
+    matching Trip.created_at) plus their 5 most recently created trips."""
     user_default_vehicle = session.exec(
         select(UserVehicle).where(
             UserVehicle.user_id==user.id,

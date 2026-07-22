@@ -12,9 +12,11 @@ router = APIRouter(
 
 @router.post("/calculate", response_model=TripCalculationResponse, response_model_exclude_unset=True)
 async def calculate_trip(
-    request: TripCalculationRequest, 
+    request: TripCalculationRequest,
     current_user: User = Depends(get_current_user)
 ):
+    """Calculates cost and CO2 for an arbitrary distance/MPG, without logging a trip.
+    Uses the current fuel price unless one is supplied in the request."""
     try:
         fuel_type = request.fuel_type or "Regular Gasoline"
         if request.fuel_price is None: 

@@ -13,9 +13,10 @@ router = APIRouter(
 
 @router.post("/register", status_code=201)
 async def user_register(
-    request: UserRegister, 
+    request: UserRegister,
     session: Session = Depends(get_session)
 ):
+    """Registers a new user account. Fails with 400 if the email is already taken."""
     existing_user = get_user_by_email(request.email, session)
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -35,6 +36,7 @@ async def user_login(
     request: UserLogin,
     session: Session = Depends(get_session)
 ):
+    """Authenticates a user and issues a new access token + refresh token pair."""
     user = get_user_by_email(request.email, session)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -51,6 +53,7 @@ async def refresh_access_token(
     request: RefreshRequest,
     session: Session = Depends(get_session)
 ):
+    """Exchanges a valid, unexpired refresh token for a new access token."""
     user_id = verify_refresh_token(request.refresh_token, session)
     access_token = create_access_token({"sub": str(user_id)})
     return AccessTokenResponse(access_token=access_token)
@@ -60,5 +63,6 @@ async def logout(
     request: RefreshRequest,
     session: Session = Depends(get_session)
 ):
+    """Revokes a refresh token, ending the session it belongs to."""
     await revoke_refresh_token(request.refresh_token, session)
     return {"message": "Logged out successfully"}
