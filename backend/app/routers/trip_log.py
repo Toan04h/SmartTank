@@ -1,13 +1,16 @@
 import uuid
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from app.schemas.trip_log import TripCreate, TripResponse, TripImageUpdate
 from app.services.trip_service import create_trip
 from app.services.storage_service import generate_upload_url, generate_download_url
 from app.core.dependencies import get_current_user
-from app.models.user import User 
+from app.models.user import User
 from app.models.trip import Trip
 from app.core.database import get_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/trips",
@@ -32,8 +35,9 @@ async def log_trip(
         return result
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to log trip for user %s", current_user.id)
+        raise HTTPException(status_code=500, detail="Internal server error")
     
 @router.get("", response_model=list[TripResponse])
 async def get_trips(

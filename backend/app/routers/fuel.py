@@ -1,8 +1,11 @@
 import asyncio
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from app.models.user import User
 from app.services.fuel_service import get_fuel_price
 from app.core.dependencies import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/fuel",
@@ -27,5 +30,6 @@ async def fuel_price_endpoint(
         }
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to fetch fuel prices")
+        raise HTTPException(status_code=500, detail="Internal server error")

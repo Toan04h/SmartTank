@@ -203,16 +203,10 @@ def delete_user_vehicle(
     
     if vehicle is None:
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail="vehicle not found or does not belong to you"
         )
-        
-    trips = session.exec(
-        select(Trip).where(
-            Trip.vehicle_id==vehicle.id
-        )
-    ).all()
-    
+
     session.exec(delete(Trip).where(col(Trip.vehicle_id)==vehicle.id))
     session.delete(vehicle)
     session.commit()

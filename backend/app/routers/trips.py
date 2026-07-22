@@ -1,9 +1,12 @@
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.trip import TripCalculationRequest, TripCalculationResponse
 from app.services.calculation_service import calculate_trip_cost
 from app.services.fuel_service import get_fuel_price
 from app.core.dependencies import get_current_user
-from app.models.user import User 
+from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/cost",
@@ -28,7 +31,8 @@ async def calculate_trip(
         data = calculate_trip_cost(request.distance, request.mpg, fuel_price, fuel_type)
         data["distance"] = request.distance
         return data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to calculate trip cost for user %s", current_user.id)
+        raise HTTPException(status_code=500, detail="Internal server error")
     
         

@@ -1,3 +1,4 @@
+import logging
 from fastapi import HTTPException, APIRouter, Depends
 from sqlmodel import Session
 from app.models.user import User
@@ -7,6 +8,8 @@ from app.services.user_service import update_user_profile, change_password
 from app.services.dashboard_service import build_dashboard
 from app.core.dependencies import get_current_user
 from app.core.database import get_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/users",
@@ -23,8 +26,9 @@ async def get_dashboard(
         return await build_dashboard(user, session)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to build dashboard for user %s", user.id)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/profile", response_model=UserResponse)
 def current_user_profile(
@@ -53,5 +57,6 @@ async def change_user_password(
         return change_password(request, user, session)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to change password for user %s", user.id)
+        raise HTTPException(status_code=500, detail="Internal server error")

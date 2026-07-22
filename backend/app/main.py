@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import maps, fuel, trips, auth, trip_log, vehicles, users
@@ -5,6 +6,11 @@ from app.routers import maps, fuel, trips, auth, trip_log, vehicles, users
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.core.limiter import limiter
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
 
 app = FastAPI(
     title="SmartTank API",

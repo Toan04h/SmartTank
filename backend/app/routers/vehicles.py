@@ -1,4 +1,5 @@
 import uuid
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from app.schemas.vehicle import ( 
@@ -24,6 +25,8 @@ from app.models.user_vehicle import UserVehicle
 from app.models.vehicle_catalog import VehicleCatalog
 from app.core.dependencies import get_current_user
 from app.core.database import get_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/vehicles",
@@ -66,8 +69,9 @@ async def compare_vehicles(
         return await compare_vehicle(request, user, session)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to compare vehicles for user %s", user.id)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/search", response_model=list[VehicleSearchResponse])
@@ -85,10 +89,11 @@ async def vehicle_search(
         )
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-    
+    except Exception:
+        logger.exception("Failed to search vehicle catalog")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @router.post("", response_model=UserVehicleResponse, status_code=201)
 async def add_vehicle(
     request: AddVehicleRequest,
@@ -127,8 +132,9 @@ async def add_vehicle(
         return await add_user_vehicle(garage_data, user.id, session)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to add vehicle for user %s", user.id)
+        raise HTTPException(status_code=500, detail="Internal server error")
     
 
 @router.get("/garage", response_model=list[UserVehicleResponse])
@@ -150,8 +156,9 @@ async def get_vehicle_stats(
         return await build_vehicle_stat(vehicle_id, user, session)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to build stats for vehicle %s", vehicle_id)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.patch("/{vehicle_id}/default", response_model=UserVehicleResponse)
 async def set_default_vehicle(

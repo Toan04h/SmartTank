@@ -48,6 +48,20 @@ def test_register_invalid_email_is_rejected(client):
 
     assert response.status_code == 422
 
+def test_register_rate_limited_after_10_per_minute(client):
+    for i in range(10):
+        client.post("/auth/register", json={
+            "email": f"rate-limit-{i}@example.com",
+            "password": "supersecret123",
+        })
+
+    response = client.post("/auth/register", json={
+        "email": "rate-limit-overflow@example.com",
+        "password": "supersecret123",
+    })
+
+    assert response.status_code == 429
+
 # --- POST /auth/login ---
 
 def test_login_success_returns_tokens_and_persists_refresh_token(client, session):
@@ -78,6 +92,14 @@ def test_login_wrong_password_rejected(client, session):
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid email or password"
+
+def test_login_rate_limited_after_10_per_minute(client):
+    for _ in range(10):
+        client.post("/auth/login", json={"email": "nobody@example.com", "password": "wrong"})
+
+    response = client.post("/auth/login", json={"email": "nobody@example.com", "password": "wrong"})
+
+    assert response.status_code == 429
 
 def test_login_unknown_email_rejected(client):
     response = client.post("/auth/login", json={
